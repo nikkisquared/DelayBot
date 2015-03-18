@@ -87,12 +87,16 @@ class DelayBot():
             })
 
 
-    def is_time(self, arg):
+    def get_time(self, arg):
         """
-        Returns True or False on whether the given arg is
-        a properly formatted time argument or not
-        Proper time formats: 1D24H60M60S, 23:59, 23:59:59, 12:59AM, 12:59:59PM
+        Returns a dict of time formatted from arg, or None on invalid input
+        Proper time formats:
+            block: 1D24H60M60S
+            24hr clock: 23:59, 23:59:59
+            12hr clock: 12:59AM, 12:59:59PM
         """
+
+        #time = {"D": 0, "H": 0, "M": 0, "S": 0}
 
         arg = arg.upper()
 
@@ -167,7 +171,7 @@ class DelayBot():
         output = u""
 
         output += command[0]
-        if self.is_time(command[0]):
+        if self.get_time(command[0]):
             output += " is a proper time signature"
         else:
             output += " is not proper!!!! nope"
