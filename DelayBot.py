@@ -56,7 +56,7 @@ class DelayBot():
             self.send_message(msg)
 
             # intentional crash to speed up testing
-            if content[1] == "crash"
+            if content[1] == "crash":
                 x = 5 / 0
                
 
