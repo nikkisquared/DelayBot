@@ -1,2 +1,4 @@
 DelayBot.sublime-project
 DelayBot.sublime-workspace
+
+*.pyc

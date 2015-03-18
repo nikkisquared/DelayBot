@@ -1,5 +1,6 @@
 import zulip
-import json, requests, os, re
+import requests
+import json, os, re, time
 
 
 class DelayBot():
@@ -96,73 +97,78 @@ class DelayBot():
             12hr clock: 12:59AM, 12:59:59PM
         """
 
-        #time = {"D": 0, "H": 0, "M": 0, "S": 0}
-
+        time = {"D": 0, "H": 0, "M": 0, "S": 0, "meridiem": "", "format":None }
+  
         arg = arg.upper()
 
         if self.blockRegexpMatch.match(arg):
-            format = "block"
+            time["format"] = "block"
         elif ":" in arg:
-            format = "clock"
+            time["format"] = "clock"
         else:
             # ERROR! not a valid format
-            print "not a valid format!"
-            return False
+            print "Not a valid block or clock format!"
+            return None
 
         # filters time for variable length block format
-        if format == "block":
+        if time["format"] == "block":
 
             arg = self.blockRegexpFind.findall(arg)
-            tally = []
 
             for value in arg:
 
                 char = value[-1]
-                if char in tally:
+                if time[char] != 0:
                     # ERROR! already defined
                     print "You defined a time twice!"
-                    return False
-                tally.append(char)
-
-                if int(value[:-1]) > self.blockLimits[char]:
-                    # ERROR! value too high
-                    print "Value is too high!"
-                    return False
+                    return None
+                time[char] = int(value[:-1]) 
+                if time[char] > self.blockLimits[char]:
+                    # ERROR! value too high for certain units
+                    print "Value for %s is too high!" %char
+                    return None
+            
 
         # filters time for 24hr and 12hr clocks
-        elif format == "clock":
+        elif time["format"] == "clock":
             arg = arg.split(":")
 
-            ending = arg[-1][2:]
-            if ending not in self.meridiems:
+            time["meridiem"]  = arg[-1][2:]
+            if time["meridiem"] not in self.meridiems:
                 # ERROR! text at end that isn't a meridiem
-                print "%s is not a merdiem" % ending
-                return False
+                print "%s is not a meridiem" % time["meridiem"]
+                return None
 
-            # specifies clock mode based on valid ending
-            if ending != "":
+            # specifies clock mode based on valid time["meridiem"]
+            if time["meridiem"] != "":
                 self.clockLimits[0] = 12
-                print ending, arg[-1]
+                print time["meridiem"], arg[-1]
+            else:
+                self.clockLimits[0] = 23
             arg[-1] = arg[-1][:2]
 
             # adds 0 seconds to standardize input
             if len(arg) not in (2, 3):
                 # ERROR! missing values
-                print "Missing Values!"
-                return False
+                print "Clock time must be Hh:Mm or Hh:Mm:Ss"
+                return None
 
-            for x, value in enumerate(arg):
-
+            for i, value in enumerate(arg):
+                populater = ["H","M","S"]
                 if not value.isdigit():
                     # ERROR! non-numeric value
                     print "Non-numeric value!"
-                    return False
-                if int(value) > self.clockLimits[x]:
+                    return None
+                if int(value) > self.clockLimits[i]:
                     # ERROR! value too high
-                    print "Value too high %s, %s, %s!" % (value, self.clockLimits[x], x)
-                    return False
+                    print "Value for %s too high!" % time[populater[i]]
+                    return None
+                time[populater[i]] = int(value)
 
-        return True
+
+
+        print time
+        return time
 
 
     def parse_command(self, command):
@@ -200,5 +206,6 @@ zulip_api_key = os.environ['DELAYBOT_API']
 key_word = "DelayBot"
 subscribed_streams = ["test-bot"]
 
-new_bot = DelayBot(zulip_username, zulip_api_key, key_word, subscribed_streams)
-new_bot.main()
+if __name__ == "__main__":
+   new_bot = DelayBot(zulip_username, zulip_api_key, key_word, subscribed_streams)
+   new_bot.main()
