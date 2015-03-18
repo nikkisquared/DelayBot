@@ -106,7 +106,7 @@ class DelayBot():
             format = "clock"
         else:
             # ERROR! not a valid format
-            print "not a valid format"
+            print "not a valid format!"
             return False
 
         # filters time for variable length block format
@@ -120,13 +120,13 @@ class DelayBot():
                 char = value[-1]
                 if char in tally:
                     # ERROR! already defined
-                    print "You defined a time twice"
+                    print "You defined a time twice!"
                     return False
                 tally.append(char)
 
                 if int(value[:-1]) > self.blockLimits[char]:
                     # ERROR! value too high
-                    print "Value is too high"
+                    print "Value is too high!"
                     return False
 
         # filters time for 24hr and 12hr clocks
@@ -148,18 +148,18 @@ class DelayBot():
             # adds 0 seconds to standardize input
             if len(arg) not in (2, 3):
                 # ERROR! missing values
-                print "Missing Values"
+                print "Missing Values!"
                 return False
 
             for x, value in enumerate(arg):
 
                 if not value.isdigit():
                     # ERROR! non-numeric value
-                    print "Non-numeric value"
+                    print "Non-numeric value!"
                     return False
                 if int(value) > self.clockLimits[x]:
                     # ERROR! value too high
-                    print "Value too high %s, %s, %s" % (value, self.clockLimits[x], x)
+                    print "Value too high %s, %s, %s!" % (value, self.clockLimits[x], x)
                     return False
 
         return True
