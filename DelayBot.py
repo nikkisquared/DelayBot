@@ -1,5 +1,5 @@
 import zulip
-import json, requests, os
+import json, requests, os, re
 
 
 class DelayBot():
@@ -16,6 +16,20 @@ class DelayBot():
         self.subscribed_streams = subscribed_streams
         self.client = zulip.Client(zulip_username, zulip_api_key)
         self.subscriptions = self.subscribe_to_streams()
+
+        # time limits for block format: days, hours, minutes, seconds
+        self.blockLimits = {'D': 1, 'H': 24, 'M': 60, 'S': 60}
+        regexp = "[0-9]{1,2}[HMDS]{1}"
+        # verifies block format
+        self.blockRegexpMatch = re.compile("^(%s){1,4}$" % regexp)
+        # filters parts out of block format
+        self.blockRegexpFind = re.compile(regexp)
+
+        # valid meridiems (including none given)
+        self.meridiems = set(["AM", 'PM', "A.M.", "P.M.", ""])
+        # time limits for clock format: hours, minutes, seconds
+        self.clockLimits = [23, 59, 59]
+
 
     @property
     def streams(self):
@@ -53,11 +67,13 @@ class DelayBot():
         content = msg["content"].lower().split(" ")
 
         if content[0] == self.key_word:
-            self.send_message(msg)
 
             # intentional crash to speed up testing
             if content[1] == "crash":
                 x = 5 / 0
+
+            msg["content"] = self.parse_command(content[1:])
+            self.send_message(msg)
                
 
     def send_message(self, msg):
@@ -67,8 +83,96 @@ class DelayBot():
             "type": "stream",
             "subject": msg["subject"],
             "to": msg["display_recipient"],
-            "content": "testing"
+            "content": msg["content"]
             })
+
+
+    def is_time(self, arg):
+        """
+        Returns True or False on whether the given arg is
+        a properly formatted time argument or not
+        Proper time formats: 1D24H60M60S, 23:59, 23:59:59, 12:59AM, 12:59:59PM
+        """
+
+        arg = arg.upper()
+
+        if self.blockRegexpMatch.match(arg):
+            format = "block"
+        elif ":" in arg:
+            format = "clock"
+        else:
+            # ERROR! not a valid format
+            print "not a valid format"
+            return False
+
+        # filters time for variable length block format
+        if format == "block":
+
+            arg = self.blockRegexpFind.findall(arg)
+            tally = []
+
+            for value in arg:
+
+                char = value[-1]
+                if char in tally:
+                    # ERROR! already defined
+                    print "You defined a time twice"
+                    return False
+                tally.append(char)
+
+                if int(value[:-1]) > self.blockLimits[char]:
+                    # ERROR! value too high
+                    print "Value is too high"
+                    return False
+
+        # filters time for 24hr and 12hr clocks
+        elif format == "clock":
+            arg = arg.split(":")
+
+            ending = arg[-1][2:]
+            if ending not in self.meridiems:
+                # ERROR! text at end that isn't a meridiem
+                print "%s is not a merdiem" % ending
+                return False
+
+            # specifies clock mode based on valid ending
+            if ending != "":
+                self.clockLimits[0] = 12
+                print ending, arg[-1]
+            arg[-1] = arg[-1][:2]
+
+            # adds 0 seconds to standardize input
+            if len(arg) not in (2, 3):
+                # ERROR! missing values
+                print "Missing Values"
+                return False
+
+            for x, value in enumerate(arg):
+
+                if not value.isdigit():
+                    # ERROR! non-numeric value
+                    print "Non-numeric value"
+                    return False
+                if int(value) > self.clockLimits[x]:
+                    # ERROR! value too high
+                    print "Value too high %s, %s, %s" % (value, self.clockLimits[x], x)
+                    return False
+
+        return True
+
+
+    def parse_command(self, command):
+        """Parses a message to validate input"""
+
+        output = u""
+
+        output += command[0]
+        if self.is_time(command[0]):
+            output += " is a proper time signature"
+        else:
+            output += " is not proper!!!! nope"
+
+        return output
 
 
     def main(self):
