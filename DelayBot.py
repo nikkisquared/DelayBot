@@ -4,7 +4,8 @@ import zulip
 import requests
 import json, os
 
-import timeconversions, delaymessage
+import timeconversions
+import delaymessage as DM
 
 
 
@@ -113,23 +114,6 @@ class DelayBot(object):
         return output, unix
 
 
-    def delay_message_to_json(self, delay_message):
-        to_json = {
-            "timestamp": delay_message.timestamp,
-            "user":delay_message.user
-            "uid":delay_message.uid
-            "stream":delay_message.stream 
-            "topic":delay_message.topic
-            "message":delay_message.message
-        }
-        return json.dumps(to_json)
-
-    def json_to_delay_messages(self, json):
-        dict_list = json.load(json)
-        message_list = (lambda x: DM.DelayMessage( x["timestamp"], x["user"], x["uid"],
-                                        x["stream"], x["topic"], x["message"] ), dict_list)
-        return message_list
-
     def check_file(self, time_file):
         pass 
 
@@ -154,6 +138,9 @@ class DelayBot(object):
     subscribed_streams is a list of the streams the bot should be active on. An empty 
         list defaults to ALL zulip streams
 """
+
+
+
 
 zulip_username = os.environ['DELAYBOT_USR']
 zulip_api_key = os.environ['DELAYBOT_API']

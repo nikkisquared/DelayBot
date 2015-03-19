@@ -1,4 +1,5 @@
 #!usr/bin/python
+import json
 
 class DelayMessage(object):
 
@@ -30,3 +31,24 @@ class DelayMessage(object):
 # def make_delay_message(timestamp, msg, message):
 #     """Makes a delay message from a given timestamp, msg, and message"""
 #     return DelayMessage(timestamp, msg["sender_full_name"])
+
+
+def delay_messages_to_json(delay_message_list):
+    to_json_list = []
+    for dm in delay_message_list:
+        to_json = {
+            "timestamp": dm.timestamp,
+            "user":dm.user,
+            "uid":dm.uid,
+            "stream":dm.stream, 
+            "topic":dm.topic,
+            "message":dm.message
+        }
+        to_json_list.append(to_json)
+    return json.dumps(to_json_list)
+
+def json_to_delay_messages(from_json):
+    dict_list = json.loads(from_json)
+    message_list = map(lambda x: DelayMessage( x["timestamp"], x["user"], x["uid"],
+                                    x["stream"], x["topic"], x["message"] ), dict_list)
+    return message_list

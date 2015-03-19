@@ -1,5 +1,7 @@
 import unittest
 import timeconversions as TC
+import delaymessage as DM 
+import DelayBot as DBot
 
 class TestGetTimeMethod(unittest.TestCase):
 
@@ -68,6 +70,18 @@ class TestGetTimeMethod(unittest.TestCase):
     def tearDown(self):
         pass
         
+
+class TestJSONMethod(unittest.TestCase):
+
+    def setup(self):
+        pass
+
+
+    def testConvertToJson(self):
+        pass
+
+    def tearDown(self):
+        pass
 
 if __name__ =='__main__':
     unittest.main()
