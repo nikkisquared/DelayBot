@@ -23,6 +23,30 @@ clockFormat = ["H", "M", "S"]
 clockLimits = [23, 59, 59]
 
 
+def parse_time(arg, msgTime):
+    """
+    Handles parsing a given time message
+    Returns an output message and a unix timestamp,
+    or an error explanation and None
+    """
+
+    output = u"%s" % arg
+
+    time = get_time(arg)
+    if time:
+        output += " is a proper time signature"
+    else:
+        output += " is not proper!!!! nope"
+        return output, None
+
+    delayTime = get_time_delay(time, msgTime)
+    unix = calendar.timegm(delayTime.utctimetuple())
+    output += "\nYou have delayed to: %s" % delayTime
+    output += "\nThe unix encoding for this is: %s" % unix
+
+    return output, unix
+
+
 def check_block_time(arg, time):
     """Filters time for variable length block format"""
 
@@ -153,7 +177,7 @@ def get_time_delay(time, msgTime):
                         minutes=time["M"], seconds=time["S"])
         timeDelay = msgTime + delta
 
-    elif time["format"] == "clock":
+    elif time["format"] in ("clock", "single"):
         if time["H"] == 12:
             time["H"] = 0
         if "P" in time["meridiem"]:
@@ -173,4 +197,4 @@ def get_time_delay(time, msgTime):
 
 def convert_to_unix(dt):
     """Converts a given datetime object to unix seconds"""
-    return calendar.timegm(dt.utctimetuple())
+    return 

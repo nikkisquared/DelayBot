@@ -21,12 +21,8 @@ class DelayMessage(object):
         """Creates a formatted message for Zulip"""
 
         message = {}
-        message["type"] = "stream"
+        message["type"] = u"stream"
         message["display_recipient"] = self.stream
         message["subject"] = self.topic
-        message["content"] = "%s\n- from [@**%s**]" % (self.message, self.user)
+        message["content"] = u"%s\n- from @**%s** " % (self.message, self.user)
         return message
-
-# def make_delay_message(timestamp, msg, message):
-#     """Makes a delay message from a given timestamp, msg, and message"""
-#     return DelayMessage(timestamp, msg["sender_full_name"])
