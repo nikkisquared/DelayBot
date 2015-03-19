@@ -22,10 +22,10 @@ class DelayMessage(object):
         """Creates a formatted message for Zulip"""
 
         message = {}
-        message["type"] = "stream"
+        message["type"] = u"stream"
         message["display_recipient"] = self.stream
         message["subject"] = self.topic
-        message["content"] = "%s\n- from [@**%s**]" % (self.message, self.user)
+        message["content"] = u"%s\n- from [@**%s**]" % (self.message, self.user)
         return message
 
 # def make_delay_message(timestamp, msg, message):
@@ -52,3 +52,4 @@ def json_to_delay_messages(from_json):
     message_list = map(lambda x: DelayMessage( x["timestamp"], x["user"], x["uid"],
                                     x["stream"], x["topic"], x["message"] ), dict_list)
     return message_list
+

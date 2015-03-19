@@ -4,10 +4,8 @@ import zulip
 import requests
 import json, os
 
-import timeconversions
+import timeconversions as TC
 import delaymessage as DM
-
-
 
 class DelayBot(object):
 
@@ -24,6 +22,12 @@ class DelayBot(object):
         self.subscribed_streams = subscribed_streams
         self.client = zulip.Client(zulip_username, zulip_api_key)
         self.subscriptions = self.subscribe_to_streams()
+        self.streamNames = []
+        for stream in self.subscriptions:
+            self.streamNames.append(stream["name"])
+
+        # keeps track of what unique id to give to new stored messages
+        self.currentUid = 0
 
     @property
     def streams(self):
@@ -49,7 +53,23 @@ class DelayBot(object):
 
     def subscribe_to_streams(self):
         """Subscribes to zulip streams"""
-        self.client.add_subscriptions(self.streams)
+        streams = self.streams
+        self.client.add_subscriptions(streams)
+        return streams
+               
+
+    def send_message(self, msg):
+        """Sends a message to a zulip stream or private message"""
+
+        if msg["type"] == "private":
+            msg["to"] = msg["sender_email"]
+        else:
+            msg["to"] = msg["display_recipient"]
+
+        message = {}
+        for item in ["type", "subject", "to", "content"]:
+            message[item] = msg[item]
+        self.client.send_message(message)
 
 
     def respond(self, msg):
@@ -60,57 +80,43 @@ class DelayBot(object):
         if "delaybot" in msg["sender_full_name"].lower():
             return None
 
-        # there can be a variable number of arguments
-        # so splitting them up gives a way to sort through them
-        content = msg["content"].lower().split(" ")
+        content = msg["content"].split(" ")
+        private = msg["type"] == "private"
 
-        # if no command was given, it doesn't try to parse it
-        if len(content) == 1:
-            # ERROR! no command given
-            return None
+        # intentional crash to speed up testing
+        if len(content) >= 2 and content[1] == "crash":
+            x = 5 / 0
 
-        elif content[0] == self.key_word:
+        elif content[0].lower() == self.key_word:
 
-            # intentional crash to speed up testing
-            if len(content) >= 2 and content[1] == "crash":
-                x = 5 / 0
-            msg["content"], timestamp = self.parse_command(
-                                        content[1:], msg["timestamp"])
-            dm = DM.make_delay_message(timestamp, msg, content[2:])
+            # if no command was given, it doesn't try to parse it
+            if len(content) < 3 or (private and len(content) < 5):
+                # ERROR! not enough commands given
+                msg["content"] = "Not enough commands given!"
+                self.send_message(msg)
+                return None
+            
+            msg["content"], timestamp = TC.parse_time(content[1], msg["timestamp"])
+
+            if private:
+                stream = content[2]
+                if stream not in self.streamNames:
+                    # ERROR! stream does not exist
+                    msg["content"] = "There is no stream known as %s" % stream
+                    return None
+                topic = content[3]
+                messageOffset = 4
+            else:
+                stream = msg["display_recipient"]
+                topic = msg["subject"]
+                messageOffset = 2
+
+            message = " ".join([str(x) for x in content[messageOffset:]])
+            dm = DM.DelayMessage(timestamp, msg["sender_full_name"],
+                            self.currentUid, stream, topic, message)
+            self.currentUid += 1
             self.send_message(msg)
-               
-
-    def send_message(self, msg):
-        """Sends a message to zulip stream"""
-
-        self.client.send_message({
-            "type": "stream",
-            "subject": msg["subject"],
-            "to": msg["display_recipient"],
-            "content": msg["content"]
-            })
-
-
-    def parse_command(self, command, msgTime):
-        """Parses a message to validate input"""
-
-        output = u""
-
-        output += command[0]
-        time = timeconversions.get_time(command[0])
-        if time:
-            output += " is a proper time signature"
-        else:
-            output += " is not proper!!!! nope"
-            return output
-
-        delayTime = timeconversions.get_time_delay(time, msgTime)
-        if delayTime:
-            output += "\nYou have delayed to: %s" % delayTime
-            unix = timeconversions.convert_to_unix(delayTime)
-            output += "\nThe unix encoding for this is: %s" % unix
-
-        return output, unix
+            self.send_message(dm.create_message())
 
 
     def check_file(self, time_file, current_time):
@@ -135,23 +141,10 @@ class DelayBot(object):
         self.client.call_on_each_message(lambda msg: self.respond(msg))
 
 
-"""
-    The Customization Part!
-    
-    Create a zulip bot under "settings" on zulip.
-    Zulip will give you a username and API key
-    key_word is the text in Zulip you would like the bot to respond to. This may be a 
-        single word or a phrase.
-    subscribed_streams is a list of the streams the bot should be active on. An empty 
-        list defaults to ALL zulip streams
-"""
-
-
-
-
 zulip_username = os.environ['DELAYBOT_USR']
 zulip_api_key = os.environ['DELAYBOT_API']
 key_word = "DelayBot"
+# an empty list will make it subscribe to all streams
 subscribed_streams = ["test-bot"]
 
 if __name__ == "__main__":
