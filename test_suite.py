@@ -1,5 +1,4 @@
 import unittest
-import DelayBot as DB
 import timeconversions as TC
 
 class TestGetTimeMethod(unittest.TestCase):

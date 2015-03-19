@@ -1,10 +1,12 @@
+#!usr/bin/python
+
 import zulip
 import requests
 import json, os
 import timeconversions
 
 
-class DelayBot():
+class DelayBot(object):
 
     def __init__(self, zulip_username, zulip_api_key, key_word, subscribed_streams=[]):
         """
@@ -97,11 +99,13 @@ class DelayBot():
             output += " is a proper time signature"
         else:
             output += " is not proper!!!! nope"
-
-        if time == None:
             return output
 
-        print timeconversions.find_time_delay(time, msgTime)
+        delayTime = timeconversions.get_time_delay(time, msgTime)
+        if delayTime:
+            output += "\nYou have delayed to: %s" % delayTime
+
+
 
         return output
 

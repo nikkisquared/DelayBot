@@ -1,9 +1,11 @@
 #!usr/bin/python
 
+# functions to handle time conversions
+
 import re, time
 from datetime import *
 
-# functions to handle time conversions
+# hardcoded data information for verifying input
 
 # time limits for block format: days, hours, minutes, seconds
 blockLimits = {'D': 1, 'H': 24, 'M': 60, 'S': 60}
@@ -132,8 +134,12 @@ def get_time(arg):
     return time
 
 
-def find_time_delay(time, msgTime):
-    """a"""
+def get_time_delay(time, msgTime):
+    """
+    Converts a given time to a datetime object at a later date
+    uses the original zulip message timestamp for some calculations
+    timeDelay will be truncated to 11:59PM the next day if it goes over
+    """
 
     msgTime = datetime.fromtimestamp(msgTime)
     timeDelay = None
@@ -153,8 +159,7 @@ def find_time_delay(time, msgTime):
         if timeDelay < msgTime:
             timeDelay += timedelta(days=1)
 
-    # time delay is truncated to 11:59:59PM
-    # to give a definite limit
+    # gives a hard limit to how long it can delay until
     if timeDelay.day > (msgTime.day + 1):
         timeDelay = datetime(msgTime.year, msgTime.month,
                             msgTime.day + 1, 23, 59, 59)
