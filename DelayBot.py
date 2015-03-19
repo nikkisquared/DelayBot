@@ -22,7 +22,6 @@ class DelayBot(object):
         self.client = zulip.Client(zulip_username, zulip_api_key)
         self.subscriptions = self.subscribe_to_streams()
 
-
     @property
     def streams(self):
         """Standardizes a list of streams in the form [{'name': stream}]"""
@@ -109,6 +108,12 @@ class DelayBot(object):
 
         return output
 
+
+    def delay_message_to_json(delay_message):
+        pass
+
+    def json_to_delay_message(delay_message):
+        pass
 
     def main(self):
         """Blocking call that runs forever. Calls self.respond() on every message received."""
