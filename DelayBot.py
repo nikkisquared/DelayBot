@@ -1,6 +1,7 @@
 import zulip
 import requests
-import json, os, re, time, datetime
+import json, os
+import timeconversions
 
 
 class DelayBot():
@@ -18,19 +19,6 @@ class DelayBot():
         self.subscribed_streams = subscribed_streams
         self.client = zulip.Client(zulip_username, zulip_api_key)
         self.subscriptions = self.subscribe_to_streams()
-
-        # time limits for block format: days, hours, minutes, seconds
-        self.blockLimits = {'D': 1, 'H': 24, 'M': 60, 'S': 60}
-        regexp = "[0-9]{1,2}[HMDS]{1}"
-        # verifies block format
-        self.blockRegexpMatch = re.compile("^(%s){1,4}$" % regexp)
-        # filters parts out of block format
-        self.blockRegexpFind = re.compile(regexp)
-
-        # valid meridiems (including none given)
-        self.meridiems = set(["AM", 'PM', "A.M.", "P.M.", ""])
-        # time limits for clock format: hours, minutes, seconds
-        self.clockLimits = [23, 59, 59]
 
 
     @property
@@ -83,7 +71,6 @@ class DelayBot():
             # intentional crash to speed up testing
             if len(content) >= 2 and content[1] == "crash":
                 x = 5 / 0
-
             msg["content"] = self.parse_command(content[1:], msg["timestamp"])
             self.send_message(msg)
                
@@ -99,111 +86,22 @@ class DelayBot():
             })
 
 
-    def get_time(self, arg):
-        """
-        Returns a dict of time formatted from arg, or None on invalid input
-        Proper time formats and their limits:
-            block: 1D24H60M60S
-            clock (24hr): 23:59, 23:59:59
-            clock (12hr): 12:59AM, 12:59:59PM
-            single: 12AM, 12PM # NOT WORKING YET
-        """
-
-        time = {"D": 0, "H": 0, "M": 0, "S": 0, "meridiem": "", "format": ""}
-  
-        arg = arg.upper()
-
-        if self.blockRegexpMatch.match(arg):
-            time["format"] = "block"
-        elif ":" in arg:
-            time["format"] = "clock"
-        elif (arg[-2:] in self.meridiems or
-                arg[-4:] in self.meridiems):
-            time["format"] = "single"
-        else:
-            # ERROR! not a valid format
-            print "Not a valid block or clock format!"
-            return None
-
-        # filters time for variable length block format
-        if time["format"] == "block":
-
-            arg = self.blockRegexpFind.findall(arg)
-
-            for value in arg:
-
-                char = value[-1]
-                if time[char] != 0:
-                    # ERROR! already defined
-                    print "You defined a time twice!"
-                    return None
-                time[char] = int(value[:-1]) 
-                if time[char] > self.blockLimits[char]:
-                    # ERROR! value too high for certain units
-                    print "Value for %s is too high!" %char
-                    return None
-
-
-        # filters time for 24hr and 12hr clocks, or single hours
-        elif time["format"] in ("clock", "single"):
-
-            if time["format"] == "clock":
-                arg = arg.split(":")
-                time["meridiem"]  = arg[-1][2:]
-            elif time["format"] == "single":
-                # ERROR! not yet handled
-                print "we need to deal with single format cleanly :("
-                return None
-
-            if time["meridiem"] not in self.meridiems:
-                # ERROR! text at end that isn't a meridiem
-                print "%s is not a meridiem" % time["meridiem"]
-                return None
-
-            # specifies clock mode based on valid time["meridiem"]
-            if time["meridiem"] != "":
-                self.clockLimits[0] = 12
-            else:
-                self.clockLimits[0] = 23
-            arg[-1] = arg[-1][:2]
-
-            if len(arg) not in (2, 3):
-                # ERROR! missing values
-                print "Clock time must be Hh or Hh:Mm or Hh:Mm:Ss"
-                return None
-
-            for i, value in enumerate(arg):
-                populater = ["H","M","S"]
-                if not value.isdigit():
-                    # ERROR! non-numeric value
-                    print "Non-numeric value!"
-                    return None
-                if int(value) > self.clockLimits[i]:
-                    # ERROR! value too high
-                    print "Value for %s too high!" % time[populater[i]]
-                    return None
-                time[populater[i]] = int(value)
-
-            if time["meridiem"] and time["H"] == 0:
-                # ERROR! no hour given for 12hr clock format
-                print "You must give an hour from 1 to 12 for 12hr clock format"
-                return None
-
-        print time
-        return time
-
-
-    def parse_command(self, command, timestamp):
+    def parse_command(self, command, msgTime):
         """Parses a message to validate input"""
 
         output = u""
 
         output += command[0]
-        time = self.get_time(command[0])
+        time = timeconversions.get_time(command[0])
         if time:
             output += " is a proper time signature"
         else:
             output += " is not proper!!!! nope"
+
+        if time == None:
+            return output
+
+        print timeconversions.find_time_delay(time, msgTime)
 
         return output
 

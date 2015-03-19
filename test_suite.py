@@ -1,45 +1,72 @@
-import DelayBot as DB 
 import unittest
+import DelayBot as DB
+import timeconversions as TC
 
 class TestGetTimeMethod(unittest.TestCase):
 
     def setUp(self):
-        self.DB = DB.DelayBot(DB.zulip_username, DB.zulip_api_key, DB.key_word, DB.subscribed_streams)
-
+        pass
         
-    def testBlockOverLimit(self):
-        self.assertIsNone(self.DB.get_time('2d'))
-        self.assertIsNone(self.DB.get_time('25h'))
-        self.assertIsNone(self.DB.get_time('61m'))     
-        self.assertIsNone(self.DB.get_time('61s'))
-        self.assertIsNotNone(self.DB.get_time('1d'))
-        self.assertIsNotNone(self.DB.get_time('24h'))
-        self.assertIsNotNone(self.DB.get_time('60m'))     
-        self.assertIsNotNone(self.DB.get_time('60s'))
-        self.assertIsNotNone(self.DB.get_time('0d'))
-        self.assertIsNotNone(self.DB.get_time('0h'))
-        self.assertIsNotNone(self.DB.get_time('00m'))     
-        self.assertIsNotNone(self.DB.get_time('00s'))
+    def testBlockLimits(self):
+        self.assertIsNone(TC.get_time('0d'))
+        self.assertIsNotNone(TC.get_time('1d'))
+        self.assertIsNone(TC.get_time('2d'))
 
-    def testClock24OverLimits(self):
-        self.assertIsNone(self.DB.get_time('24:00'))
-        self.assertIsNone(self.DB.get_time('24:01'))
-        self.assertIsNotNone(self.DB.get_time('23:59'))
-        self.assertIsNone(self.DB.get_time('24:00:00'))
-        self.assertIsNone(self.DB.get_time('24:00:01'))
-        self.assertIsNotNone(self.DB.get_time('23:00:59'))
-        self.assertIsNotNone(self.DB.get_time('0:00:00'))
+        self.assertIsNone(TC.get_time('0h'))
+        self.assertIsNotNone(TC.get_time('24h'))
+        self.assertIsNone(TC.get_time('25h'))
 
-    def testClock12OverLimits(self):
-        for meridiem in ("AM", "PM", "A.M.", "P.M.", "am", "pm", "a.m.", "p.m."):
-            self.assertIsNone(self.DB.get_time('13:00%s' % meridiem))
-            self.assertIsNotNone(self.DB.get_time('12:00%s' % meridiem))
-            self.assertIsNone(self.DB.get_time('0:00%s' % meridiem))
-            self.assertIsNotNone(self.DB.get_time('1:00%s' % meridiem))
+        self.assertIsNone(TC.get_time('00m'))
+        self.assertIsNotNone(TC.get_time('60m'))
+        self.assertIsNone(TC.get_time('61m'))
+
+        self.assertIsNone(TC.get_time('00s'))
+        self.assertIsNotNone(TC.get_time('60s'))
+        self.assertIsNone(TC.get_time('61s'))
+
+        self.assertIsNone(TC.get_time('0d24h60m60s'))
+        self.assertIsNone(TC.get_time('1d0h60m60s'))
+        self.assertIsNone(TC.get_time('1d24h0m60s'))
+        self.assertIsNone(TC.get_time('1d24h60m0s'))
+        self.assertIsNotNone(TC.get_time('1d24h60m60s'))
+
+
+    def testClock24Limits(self):
+        self.assertIsNone(TC.get_time('24:00'))
+        self.assertIsNone(TC.get_time('24:01'))
+        self.assertIsNone(TC.get_time('24:00:00'))
+        self.assertIsNone(TC.get_time('24:00:01'))
+        self.assertIsNone(TC.get_time('24:01:01'))
+
+        self.assertIsNone(TC.get_time('0'))
+        self.assertIsNotNone(TC.get_time('0:00'))
+        self.assertIsNotNone(TC.get_time('0:00:00'))
+        self.assertIsNone(TC.get_time('00:60'))
+        self.assertIsNone(TC.get_time('00:00:60'))
+
+        self.assertIsNotNone(TC.get_time('23:59'))
+        self.assertIsNotNone(TC.get_time('23:00:59'))
+        self.assertIsNotNone(TC.get_time('23:59:59'))
+
+
+    def testClock12Limits(self):
+        for meridiem in ("AM", "PM", "A.M.", "P.M."):
+            self.assertIsNone(TC.get_time('13:00%s' % meridiem))
+            self.assertIsNone(TC.get_time('13:01%s' % meridiem))
+            self.assertIsNone(TC.get_time('13:00:01%s' % meridiem))
+            self.assertIsNotNone(TC.get_time('1:00%s' % meridiem))
+            self.assertIsNone(TC.get_time('1:60%s' % meridiem))
+            self.assertIsNone(TC.get_time('1:00:60%s' % meridiem))
+
+            self.assertIsNone(TC.get_time('0:00%s' % meridiem))
+            self.assertIsNotNone(TC.get_time('12:00%s' % meridiem))
+            self.assertIsNotNone(TC.get_time('12:59%s' % meridiem))
+            self.assertIsNotNone(TC.get_time('12:00:59%s' % meridiem))
+            self.assertIsNotNone(TC.get_time('12:59:59%s' % meridiem))
 
 
     def tearDown(self):
-        self.DB = None
+        pass
         
 
 if __name__ =='__main__':
