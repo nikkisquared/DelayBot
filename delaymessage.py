@@ -1,32 +1,34 @@
 #!usr/bin/python
 import json
 
-class DelayMessage(object):
-
-    def __init__(self, timestamp, user, uid, stream, topic, message):
-        """
-        Initializes an instance of a DelayMessage
-        it needs a unix timestamp, username, unique id,
-        stream:topic to respond in, and message to send
-        """
-
-        self.timestamp = timestamp
-        self.user = user
-        self.uid = uid
-        self.stream = stream
-        self.topic = topic
-        self.message = message
 
 
-    def create_message(self):
-        """Creates a formatted message for Zulip"""
+def delay_message(timestamp, user, uid, stream, topic, message):
+    """
+    Creates an instance of a delaymessage with all data
+    it needs a unix timestamp, username, unique id,
+    stream:topic to respond in, and message to send
+    """
 
-        message = {}
-        message["type"] = u"stream"
-        message["display_recipient"] = self.stream
-        message["subject"] = self.topic
-        message["content"] = u"%s\n- from [@**%s**]" % (self.message, self.user)
-        return message
+    return {
+        "timestamp": timestamp,
+        "user": user,
+        "uid": uid,
+        "stream": stream, 
+        "topic": topic,
+        "message": message
+    }
+
+
+def create_message(dm):
+    """Creates a formatted message for Zulip"""
+
+    message = {}
+    message["type"] = u"stream"
+    message["display_recipient"] = dm["stream"]
+    message["subject"] = dm["topic"]
+    message["content"] = u"%s\n- from @**%s**" % (dm["message"], dm["user"])
+    return message
 
 
 def delay_messages_to_json(delay_message_list):

@@ -112,11 +112,11 @@ class DelayBot(object):
                 messageOffset = 2
 
             message = " ".join([str(x) for x in content[messageOffset:]])
-            dm = DM.DelayMessage(timestamp, msg["sender_full_name"],
-                            self.currentUid, stream, topic, message)
+            dm = DM.delay_message(timestamp, msg["sender_full_name"],
+                                self.currentUid, stream, topic, message)
             self.currentUid += 1
             self.send_message(msg)
-            self.send_message(dm.create_message())
+            self.send_message(DM.create_message(dm))
 
 
     def check_file(self, time_file, current_time):
