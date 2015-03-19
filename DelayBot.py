@@ -35,7 +35,6 @@ class DelayBot(object):
             streams = [{"name": stream} for stream in self.subscribed_streams]
             return streams
 
-
     def get_all_zulip_streams(self):
         """Call Zulip API to get a list of all streams"""
 
@@ -77,7 +76,7 @@ class DelayBot(object):
                 x = 5 / 0
             msg["content"], timestamp = self.parse_command(
                                         content[1:], msg["timestamp"])
-            dm = delaymessage.make_delay_message(timestamp, msg, content[2:])
+            dm = DM.make_delay_message(timestamp, msg, content[2:])
             self.send_message(msg)
                
 
@@ -114,11 +113,19 @@ class DelayBot(object):
         return output, unix
 
 
-    def check_file(self, time_file):
-        pass 
-
-    def add_message_to_file(self, time_file):
+    def check_file(self, time_file, current_time):
         pass
+
+    def add_message_to_file(self, message):
+        if os.path.isfile('messages.json'):
+            with open('messages.json', 'r') as mfile:  #could do this using load function. refactor later
+                json_string = mfile.read()
+                message_list = DB.json_to_delay_messages(json_string)
+        message_list.append(message)
+        sorted_list = sorted(message_list, key=lambda x:x.timestamp)
+        with open('messages.json', 'w') as mfile:
+            mfile.write(DM.delay_messages_to_json(sorted_list))   
+
     
     def remove_message_from_file(self, time_file):
         pass
