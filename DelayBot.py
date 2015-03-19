@@ -4,6 +4,7 @@ import zulip
 import requests
 import json, os
 import timeconversions
+import DelayMessage as DM
 
 
 class DelayBot(object):
@@ -109,10 +110,30 @@ class DelayBot(object):
         return output
 
 
-    def delay_message_to_json(delay_message):
-        pass
+    def delay_message_to_json(self, delay_message):
+        to_json = {
+            "timestamp": delay_message.timestamp,
+            "user":delay_message.user
+            "uid":delay_message.uid
+            "stream":delay_message.stream 
+            "topic":delay_message.topic
+            "message":delay_message.message
+        }
+        return json.dumps(to_json)
 
-    def json_to_delay_message(delay_message):
+    def json_to_delay_messages(self, json):
+        dict_list = json.load(json)
+        message_list = (lambda x: DM.DelayMessage( x["timestamp"], x["user"], x["uid"],
+                                        x["stream"], x["topic"], x["message"] ), dict_list)
+        return message_list
+
+    def check_file(self, time_file):
+        pass 
+
+    def add_message_to_file(self, time_file):
+        pass
+    
+    def remove_message_from_file(self, time_file):
         pass
 
     def main(self):
