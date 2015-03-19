@@ -23,10 +23,11 @@ class TestGetTimeMethod(unittest.TestCase):
         self.assertIsNotNone(TC.get_time('60s'))
         self.assertIsNone(TC.get_time('61s'))
 
-        self.assertIsNone(TC.get_time('0d24h60m60s'))
-        self.assertIsNone(TC.get_time('1d0h60m60s'))
-        self.assertIsNone(TC.get_time('1d24h0m60s'))
-        self.assertIsNone(TC.get_time('1d24h60m0s'))
+        self.assertIsNone(TC.get_time('0d0h0m0s'))
+        self.assertIsNotNone(TC.get_time('0d24h60m60s'))
+        self.assertIsNotNone(TC.get_time('1d0h60m60s'))
+        self.assertIsNotNone(TC.get_time('1d24h0m60s'))
+        self.assertIsNotNone(TC.get_time('1d24h60m0s'))
         self.assertIsNotNone(TC.get_time('1d24h60m60s'))
 
 

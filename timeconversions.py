@@ -26,6 +26,8 @@ def check_block_time(arg, time):
     """Filters time for variable length block format"""
 
     arg = blockRegexpFind.findall(arg)
+    # used to check if all values are 0
+    total = 0
 
     for value in arg:
 
@@ -35,16 +37,17 @@ def check_block_time(arg, time):
             print "You defined a time twice!"
             return None
 
-        time[char] = int(value[:-1]) 
+        time[char] = int(value[:-1])
+        total += time[char]
         if time[char] > blockLimits[char]:
             # ERROR! value too high for certain units
             print "Value for %s is too high!" %char
             return None
 
-        if time[char] == 0:
-            # ERROR! must be a non-zero value
-            print "Values must be non-zero"
-            return None
+    if total == 0:
+        # ERROR! all values given are 0
+        print "You must specify at least one non-zero value"
+        return None
 
     return time
 
