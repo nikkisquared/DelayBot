@@ -1,6 +1,6 @@
 import zulip
 import requests
-import json, os, re, time
+import json, os, re, time, datetime
 
 
 class DelayBot():
@@ -9,6 +9,7 @@ class DelayBot():
         """
         DelayBot takes a zulip username and api key,
         and a list of the zulip streams it should be active in.
+        It keeps information used for parsing commands here
         """
         self.username = zulip_username
         self.api_key = zulip_api_key
@@ -63,17 +64,27 @@ class DelayBot():
     def respond(self, msg):
         """Checks msg against key_word. If key_word is in msg, calls send_message()"""
 
+        # DelayBot isn't allowed to call itself
+        # because recursive calls could get messy
+        if "delaybot" in msg["sender_full_name"].lower():
+            return None
+
         # there can be a variable number of arguments
         # so splitting them up gives a way to sort through them
         content = msg["content"].lower().split(" ")
 
-        if content[0] == self.key_word:
+        # if no command was given, it doesn't try to parse it
+        if len(content) == 1:
+            # ERROR! no command given
+            return None
+
+        elif content[0] == self.key_word:
 
             # intentional crash to speed up testing
-            if content[1] == "crash":
+            if len(content) >= 2 and content[1] == "crash":
                 x = 5 / 0
 
-            msg["content"] = self.parse_command(content[1:])
+            msg["content"] = self.parse_command(content[1:], msg["timestamp"])
             self.send_message(msg)
                
 
@@ -91,13 +102,14 @@ class DelayBot():
     def get_time(self, arg):
         """
         Returns a dict of time formatted from arg, or None on invalid input
-        Proper time formats:
+        Proper time formats and their limits:
             block: 1D24H60M60S
-            24hr clock: 23:59, 23:59:59
-            12hr clock: 12:59AM, 12:59:59PM
+            clock (24hr): 23:59, 23:59:59
+            clock (12hr): 12:59AM, 12:59:59PM
+            single: 12AM, 12PM # NOT WORKING YET
         """
 
-        time = {"D": 0, "H": 0, "M": 0, "S": 0, "meridiem": "", "format":None }
+        time = {"D": 0, "H": 0, "M": 0, "S": 0, "meridiem": "", "format": ""}
   
         arg = arg.upper()
 
@@ -105,6 +117,9 @@ class DelayBot():
             time["format"] = "block"
         elif ":" in arg:
             time["format"] = "clock"
+        elif (arg[-2:] in self.meridiems or
+                arg[-4:] in self.meridiems):
+            time["format"] = "single"
         else:
             # ERROR! not a valid format
             print "Not a valid block or clock format!"
@@ -127,13 +142,19 @@ class DelayBot():
                     # ERROR! value too high for certain units
                     print "Value for %s is too high!" %char
                     return None
-            
 
-        # filters time for 24hr and 12hr clocks
-        elif time["format"] == "clock":
-            arg = arg.split(":")
 
-            time["meridiem"]  = arg[-1][2:]
+        # filters time for 24hr and 12hr clocks, or single hours
+        elif time["format"] in ("clock", "single"):
+
+            if time["format"] == "clock":
+                arg = arg.split(":")
+                time["meridiem"]  = arg[-1][2:]
+            elif time["format"] == "single":
+                # ERROR! not yet handled
+                print "we need to deal with single format cleanly :("
+                return None
+
             if time["meridiem"] not in self.meridiems:
                 # ERROR! text at end that isn't a meridiem
                 print "%s is not a meridiem" % time["meridiem"]
@@ -142,15 +163,13 @@ class DelayBot():
             # specifies clock mode based on valid time["meridiem"]
             if time["meridiem"] != "":
                 self.clockLimits[0] = 12
-                print time["meridiem"], arg[-1]
             else:
                 self.clockLimits[0] = 23
             arg[-1] = arg[-1][:2]
 
-            # adds 0 seconds to standardize input
             if len(arg) not in (2, 3):
                 # ERROR! missing values
-                print "Clock time must be Hh:Mm or Hh:Mm:Ss"
+                print "Clock time must be Hh or Hh:Mm or Hh:Mm:Ss"
                 return None
 
             for i, value in enumerate(arg):
@@ -165,19 +184,23 @@ class DelayBot():
                     return None
                 time[populater[i]] = int(value)
 
-
+            if time["meridiem"] and time["H"] == 0:
+                # ERROR! no hour given for 12hr clock format
+                print "You must give an hour from 1 to 12 for 12hr clock format"
+                return None
 
         print time
         return time
 
 
-    def parse_command(self, command):
+    def parse_command(self, command, timestamp):
         """Parses a message to validate input"""
 
         output = u""
 
         output += command[0]
-        if self.get_time(command[0]):
+        time = self.get_time(command[0])
+        if time:
             output += " is a proper time signature"
         else:
             output += " is not proper!!!! nope"

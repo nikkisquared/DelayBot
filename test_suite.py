@@ -21,13 +21,21 @@ class TestGetTimeMethod(unittest.TestCase):
         self.assertIsNotNone(self.DB.get_time('00m'))     
         self.assertIsNotNone(self.DB.get_time('00s'))
 
-    def testClockOverLimits(self):
+    def testClock24OverLimits(self):
         self.assertIsNone(self.DB.get_time('24:00'))
         self.assertIsNone(self.DB.get_time('24:01'))
         self.assertIsNotNone(self.DB.get_time('23:59'))
         self.assertIsNone(self.DB.get_time('24:00:00'))
         self.assertIsNone(self.DB.get_time('24:00:01'))
         self.assertIsNotNone(self.DB.get_time('23:00:59'))
+        self.assertIsNotNone(self.DB.get_time('0:00:00'))
+
+    def testClock12OverLimits(self):
+        for meridiem in ("AM", "PM", "A.M.", "P.M.", "am", "pm", "a.m.", "p.m."):
+            self.assertIsNone(self.DB.get_time('13:00%s' % meridiem))
+            self.assertIsNotNone(self.DB.get_time('12:00%s' % meridiem))
+            self.assertIsNone(self.DB.get_time('0:00%s' % meridiem))
+            self.assertIsNotNone(self.DB.get_time('1:00%s' % meridiem))
 
 
     def tearDown(self):
