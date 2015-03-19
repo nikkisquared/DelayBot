@@ -123,22 +123,25 @@ class DelayBot(object):
         pass
 
     def add_message_to_file(self, message):
+        message_list = []
         if os.path.isfile('messages.json'):
-            with open('messages.json', 'r') as mfile:  #could do this using load function. refactor later
+            with open('messages.json', 'r+') as mfile:  #could do this using load function. refactor later
                 json_string = mfile.read()
-                message_list = DB.json_to_delay_messages(json_string)
+                message_list = DM.json_to_delay_messages(json_string)
+                print 'found message json'
         message_list.append(message)
         sorted_list = sorted(message_list, key=lambda x:x.timestamp)
         with open('messages.json', 'w') as mfile:
             mfile.write(DM.delay_messages_to_json(sorted_list))   
 
-    
+        
     def remove_message_from_file(self, time_file):
         pass
 
     def main(self):
         """Blocking call that runs forever. Calls self.respond() on every message received."""
         self.client.call_on_each_message(lambda msg: self.respond(msg))
+
 
 
 zulip_username = os.environ['DELAYBOT_USR']

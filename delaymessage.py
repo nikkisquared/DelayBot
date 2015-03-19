@@ -28,10 +28,6 @@ class DelayMessage(object):
         message["content"] = u"%s\n- from [@**%s**]" % (self.message, self.user)
         return message
 
-# def make_delay_message(timestamp, msg, message):
-#     """Makes a delay message from a given timestamp, msg, and message"""
-#     return DelayMessage(timestamp, msg["sender_full_name"])
-
 
 def delay_messages_to_json(delay_message_list):
     to_json_list = []

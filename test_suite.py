@@ -3,6 +3,8 @@ import timeconversions as TC
 import delaymessage as DM 
 import DelayBot as DBot
 
+import json
+
 class TestGetTimeMethod(unittest.TestCase):
 
     def setUp(self):
@@ -70,16 +72,27 @@ class TestGetTimeMethod(unittest.TestCase):
     def tearDown(self):
         pass
         
+class TestDelayMessage(unittest.TestCase):
+    def setUp(self):
+        pass
+    def tearDown(self):
+        pass
+
 
 class TestJSONMethod(unittest.TestCase):
 
-    def setup(self):
-        pass
-
-
-    def testConvertToJson(self):
-        pass
-
+    def setUp(self):
+        self.DBot = DBot.DelayBot(DBot.zulip_username, DBot.zulip_api_key, DBot.key_word, DBot.subscribed_streams)
+        self.messageObjectList = [DM.DelayMessage(i*1000, 'Eric%d'%i, i, 'Stream%d'%i, 'Topic%d'%i,'Message%d'%i) for i in range(1,10)]
+        self.messageDictList = [{"timestamp":i*1000, "user":'Eric%d'%i, "uid":i, "stream":'Stream%d'%i, "topic":'Topic%d'%i,"message":'Message%d'%i} for i in range(1,10)]
+        
+    # def testConvertToJson(self):
+        
+    #     for m in self.messageObjectList:
+    #         self.DBot.add_message_to_file(m)
+    #     with open('messages.json') as mfile:
+    #         self.assertEqual(json.load(mfile), json.dumps(self.messageDictList))
+    
     def tearDown(self):
         pass
 
