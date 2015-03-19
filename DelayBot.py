@@ -3,8 +3,9 @@
 import zulip
 import requests
 import json, os
-import timeconversions
-import DelayMessage as DM
+
+import timeconversions, delaymessage
+
 
 
 class DelayBot(object):
@@ -73,7 +74,9 @@ class DelayBot(object):
             # intentional crash to speed up testing
             if len(content) >= 2 and content[1] == "crash":
                 x = 5 / 0
-            msg["content"] = self.parse_command(content[1:], msg["timestamp"])
+            msg["content"], timestamp = self.parse_command(
+                                        content[1:], msg["timestamp"])
+            dm = delaymessage.make_delay_message(timestamp, msg, content[2:])
             self.send_message(msg)
                
 
@@ -104,10 +107,10 @@ class DelayBot(object):
         delayTime = timeconversions.get_time_delay(time, msgTime)
         if delayTime:
             output += "\nYou have delayed to: %s" % delayTime
+            unix = timeconversions.convert_to_unix(delayTime)
+            output += "\nThe unix encoding for this is: %s" % unix
 
-
-
-        return output
+        return output, unix
 
 
     def delay_message_to_json(self, delay_message):
