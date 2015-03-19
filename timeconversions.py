@@ -4,6 +4,7 @@
 
 import re, time
 from datetime import *
+import calendar
 
 # hardcoded data information for verifying input
 
@@ -168,3 +169,8 @@ def get_time_delay(time, msgTime):
                             msgTime.day + 1, 23, 59, 59)
 
     return timeDelay
+
+
+def convert_to_unix(dt):
+    """Converts a given datetime object to unix seconds"""
+    return calendar.timegm(dt.utctimetuple())
