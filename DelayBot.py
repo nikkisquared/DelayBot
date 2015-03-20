@@ -2,7 +2,7 @@
 
 import zulip
 import requests
-import json, os
+import json, os, sys
 
 import timeconversions as TC
 import delaymessage as DM
@@ -72,6 +72,21 @@ class DelayBot(object):
         self.client.send_message(message)
 
 
+    def parse_destination(self, content, msg, private):
+        """Parses and returns the stream, topic, and messageOffset"""
+
+        if private:
+            stream = content[0].replace("_", " ")
+            topic = content[1].replace("_", " ")
+            messageOffset = 4
+        else:
+            stream = msg["display_recipient"]
+            topic = msg["subject"]
+            messageOffset = 2
+
+        return stream, topic, messageOffset
+
+
     def respond(self, msg):
         """Checks msg against key_word. If key_word is in msg, calls send_message()"""
 
@@ -85,7 +100,7 @@ class DelayBot(object):
 
         # intentional crash to speed up testing
         if len(content) >= 2 and content[1] == "crash":
-            x = 5 / 0
+            sys.exit()
 
         elif content[0].lower() == self.key_word:
 
@@ -97,19 +112,11 @@ class DelayBot(object):
                 return None
             
             msg["content"], timestamp = TC.parse_time(content[1], msg["timestamp"])
-
-            if private:
-                stream = content[2]
-                if stream not in self.streamNames:
-                    # ERROR! stream does not exist
-                    msg["content"] = "There is no stream known as %s" % stream
-                    return None
-                topic = content[3]
-                messageOffset = 4
-            else:
-                stream = msg["display_recipient"]
-                topic = msg["subject"]
-                messageOffset = 2
+            stream, topic, messageOffset = self.parse_destination(content[2:], msg, private)
+            if stream not in self.streamNames:
+                # ERROR! stream does not exist
+                msg["content"] = "There is no stream known as %s" % stream
+                return None
 
             message = " ".join([str(x) for x in content[messageOffset:]])
             dm = DM.delay_message(timestamp, msg["sender_full_name"],
@@ -121,6 +128,7 @@ class DelayBot(object):
 
     def check_file(self, time_file, current_time):
         pass
+
 
     def add_message_to_file(self, message):
         if os.path.isfile('messages.json'):
@@ -136,6 +144,7 @@ class DelayBot(object):
     def remove_message_from_file(self, time_file):
         pass
 
+
     def main(self):
         """Blocking call that runs forever. Calls self.respond() on every message received."""
         self.client.call_on_each_message(lambda msg: self.respond(msg))
@@ -147,6 +156,7 @@ key_word = "DelayBot"
 # an empty list will make it subscribe to all streams
 subscribed_streams = ["test-bot"]
 
+# won't run DelayBot when this file is imported
 if __name__ == "__main__":
    new_bot = DelayBot(zulip_username, zulip_api_key, key_word, subscribed_streams)
    new_bot.main()

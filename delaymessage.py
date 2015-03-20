@@ -20,13 +20,15 @@ def delay_message(timestamp, user, uid, stream, topic, message):
 
 
 def create_message(dm):
-    """Creates a formatted message for Zulip"""
+    """Converts a delaymessage into a Zulip message"""
 
     message = {}
     message["type"] = u"stream"
     message["display_recipient"] = dm["stream"]
     message["subject"] = dm["topic"]
     message["content"] = u"%s\n- from @**%s**" % (dm["message"], dm["user"])
+    print dm["stream"]
+    print dm["topic"]
     return message
 
 
