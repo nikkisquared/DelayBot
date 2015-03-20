@@ -2,7 +2,6 @@
 import json
 
 
-
 def delay_message(timestamp, user, uid, stream, topic, message):
     """
     Creates an instance of a delaymessage with all data
@@ -38,5 +37,3 @@ def dm_list_to_json(dm_list):  #move these later
 
 def json_to_dm_list(from_json):
     return json.loads(from_json)
-
-

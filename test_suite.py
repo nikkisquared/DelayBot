@@ -6,36 +6,39 @@ import DelayBot as DBot
 import json
 
 class TestGetTimeMethod(unittest.TestCase):
-
-    def setUp(self):
-        pass
         
-    def testBlockLimits(self):
-        self.assertIsNone(TC.get_time('0d'))
+
+    def testBlock(self):
+        # testing exact limits (d = 1, h = 24, m/s = 60)
         self.assertIsNotNone(TC.get_time('1d'))
-        self.assertIsNone(TC.get_time('2d'))
-
-        self.assertIsNone(TC.get_time('0h'))
         self.assertIsNotNone(TC.get_time('24h'))
-        self.assertIsNone(TC.get_time('25h'))
-
-        self.assertIsNone(TC.get_time('00m'))
         self.assertIsNotNone(TC.get_time('60m'))
-        self.assertIsNone(TC.get_time('61m'))
-
-        self.assertIsNone(TC.get_time('00s'))
         self.assertIsNotNone(TC.get_time('60s'))
-        self.assertIsNone(TC.get_time('61s'))
+        # going definitively beyond 11:59PM the next day is valid
+        self.assertIsNotNone(TC.get_time('1d24h60m60s'))
 
+        # testing over limits (d = 2, h = 25, m/s = 61)
+        self.assertIsNone(TC.get_time('2d'))
+        self.assertIsNone(TC.get_time('25h'))
+        self.assertIsNone(TC.get_time('61m'))
+        self.assertIsNone(TC.get_time('61s'))
+        self.assertIsNone(TC.get_time('2d25h61m61s'))
+
+        # all 0 values means no time delay, which is invalid
+        self.assertIsNone(TC.get_time('0d'))
+        self.assertIsNone(TC.get_time('0h'))
+        self.assertIsNone(TC.get_time('00m'))
+        self.assertIsNone(TC.get_time('00s'))
         self.assertIsNone(TC.get_time('0d0h0m0s'))
+
+        # a single 0 value is acceptable
         self.assertIsNotNone(TC.get_time('0d24h60m60s'))
         self.assertIsNotNone(TC.get_time('1d0h60m60s'))
         self.assertIsNotNone(TC.get_time('1d24h0m60s'))
         self.assertIsNotNone(TC.get_time('1d24h60m0s'))
-        self.assertIsNotNone(TC.get_time('1d24h60m60s'))
 
 
-    def testClock24Limits(self):
+    def testClock24hr(self):
         self.assertIsNone(TC.get_time('24:00'))
         self.assertIsNone(TC.get_time('24:01'))
         self.assertIsNone(TC.get_time('24:00:00'))
@@ -53,26 +56,39 @@ class TestGetTimeMethod(unittest.TestCase):
         self.assertIsNotNone(TC.get_time('23:59:59'))
 
 
-    def testClock12Limits(self):
-        for meridiem in ("AM", "PM", "A.M.", "P.M."):
+    def testClock12hr(self):
+        for meridiem in ("AM", "PM", "A.M.", "P.M.", "am", "pm", "a.m.", "p.m."):
+
+            # testing over limits (h = 13, m/s = 60)
             self.assertIsNone(TC.get_time('13:00%s' % meridiem))
-            self.assertIsNone(TC.get_time('13:01%s' % meridiem))
-            self.assertIsNone(TC.get_time('13:00:01%s' % meridiem))
-            self.assertIsNotNone(TC.get_time('1:00%s' % meridiem))
             self.assertIsNone(TC.get_time('1:60%s' % meridiem))
             self.assertIsNone(TC.get_time('1:00:60%s' % meridiem))
 
+            # cannot give 0 as an hour
             self.assertIsNone(TC.get_time('0:00%s' % meridiem))
+
+            # testing equal to limits (h = 12, m/s = 59)
             self.assertIsNotNone(TC.get_time('12:00%s' % meridiem))
             self.assertIsNotNone(TC.get_time('12:59%s' % meridiem))
             self.assertIsNotNone(TC.get_time('12:00:59%s' % meridiem))
             self.assertIsNotNone(TC.get_time('12:59:59%s' % meridiem))
 
 
-    def tearDown(self):
-        pass
+    def testSingleHour(self):
+        for meridiem in ("AM", "PM", "A.M.", "P.M.", "am", "pm", "a.m.", "p.m."):
+            # testing that single hour clock formats work
+            self.assertIsNotNone(TC.get_time('1%s' % meridiem))
+            # cannot give 0 as an hour
+            self.assertIsNone(TC.get_time('0%s' % meridiem))
+            # testing over limit (h = 13)
+            self.assertIsNone(TC.get_time('13%s' % meridiem))
+            # testing equal to limits (h = 12)
+            self.assertIsNotNone(TC.get_time('12%s' % meridiem))
+
+
         
 class TestDelayMessage(unittest.TestCase):
+
     def setUp(self):
         pass
     def tearDown(self):

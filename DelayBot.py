@@ -7,6 +7,7 @@ import json, os, sys
 import timeconversions as TC
 import delaymessage as DM
 
+
 class DelayBot(object):
 
     def __init__(self, zulip_username, zulip_api_key, key_word, subscribed_streams=[]):
@@ -29,6 +30,7 @@ class DelayBot(object):
         # keeps track of what unique id to give to new stored messages
         self.currentUid = 0
 
+
     @property
     def streams(self):
         """Standardizes a list of streams in the form [{'name': stream}]"""
@@ -38,6 +40,7 @@ class DelayBot(object):
         else: 
             streams = [{"name": stream} for stream in self.subscribed_streams]
             return streams
+
 
     def get_all_zulip_streams(self):
         """Call Zulip API to get a list of all streams"""
@@ -150,7 +153,6 @@ class DelayBot(object):
     def main(self):
         """Blocking call that runs forever. Calls self.respond() on every message received."""
         self.client.call_on_each_message(lambda msg: self.respond(msg))
-
 
 
 zulip_username = os.environ['DELAYBOT_USR']

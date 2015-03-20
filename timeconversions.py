@@ -80,13 +80,19 @@ def check_block_time(arg, time):
 def check_clock_time(arg, time):
     """Filters time for 24hr and 12hr clocks, or single hours"""
 
+    # clock times are in the format Hh:Mm(:Ss)[meridiem]
+    # so the meridiem will always start at the 3rd character
+    meridiemPoint = 2
     if time["format"] == "clock":
         arg = arg.split(":")
-        time["meridiem"]  = arg[-1][2:]
     elif time["format"] == "single":
-        # ERROR! not yet handled
-        print "we need to deal with single format cleanly :("
-        return None
+        # if the length is odd, that means that the hour is a single digit
+        # and meridiemPoint needs to account for that. ie 1am vs 12am
+        meridiemPoint -= len(arg) % 2
+        # rest of function expects a list
+        arg = [arg]
+    time["meridiem"] = arg[-1][meridiemPoint:]
+    arg[-1] = arg[-1][:meridiemPoint]
 
     if time["meridiem"] not in meridiems:
         # ERROR! text at end that isn't a meridiem
@@ -98,9 +104,8 @@ def check_clock_time(arg, time):
     # otherwise, it is 12hr time. either way, the limit must be right
     global clockLimits
     clockLimits[0] = 23 if time["meridiem"] == "" else 12
-    arg[-1] = arg[-1][:2]
 
-    if len(arg) not in (2, 3):
+    if len(arg) < 1 or len(arg) > 3:
         # ERROR! missing values
         print "Clock time must be Hh or Hh:Mm or Hh:Mm:Ss"
         return None
@@ -133,8 +138,8 @@ def get_time(arg):
     Proper time formats and their limits:
         block: 1D24H60M60S
         clock (24hr): 23:59, 23:59:59
-        clock (12hr): 12:59AM, 12:59:59PM
-        single: 12AM, 12PM # NOT WORKING YET
+        clock (12hr): 12:59AM, 12:59:59P.M.
+        single: 12AM, 12P.M.
     """
 
     time = {"D": 0, "H": 0, "M": 0, "S": 0, "meridiem": "", "format": ""}
