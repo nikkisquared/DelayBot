@@ -21,19 +21,20 @@ class TestGetTimeMethod(unittest.TestCase):
         # going definitively beyond 11:59PM the next day is valid
         self.assertIsNotNone(TC.get_time("1d24h60m60s"))
 
-        # testing over limits (d = 2, h = 25, m/s = 61)
-        self.assertIsNone(TC.get_time("2d"))
-        self.assertIsNone(TC.get_time("25h"))
-        self.assertIsNone(TC.get_time("61m"))
-        self.assertIsNone(TC.get_time("61s"))
-        self.assertIsNone(TC.get_time("2d25h61m61s"))
+        with self.assertRaises(ValueError):
+            # testing over limits (d = 2, h = 25, m/s = 61)
+            TC.get_time("2d")
+            TC.get_time("25h")
+            TC.get_time("61m")
+            TC.get_time("61s")
+            TC.get_time("2d25h61m61s")
 
-        # all 0 values means no time delay, which is invalid
-        self.assertIsNone(TC.get_time("0d"))
-        self.assertIsNone(TC.get_time("0h"))
-        self.assertIsNone(TC.get_time("00m"))
-        self.assertIsNone(TC.get_time("00s"))
-        self.assertIsNone(TC.get_time("0d0h0m0s"))
+            # all 0 values means no time delay, which is invalid
+            TC.get_time("0d")
+            TC.get_time("0h")
+            TC.get_time("00m")
+            TC.get_time("00s")
+            TC.get_time("0d0h0m0s")
 
         # a single 0 value is acceptable
         self.assertIsNotNone(TC.get_time("0d24h60m60s"))
@@ -43,17 +44,19 @@ class TestGetTimeMethod(unittest.TestCase):
 
 
     def testClock24hr(self):
-        self.assertIsNone(TC.get_time("24:00"))
-        self.assertIsNone(TC.get_time("24:01"))
-        self.assertIsNone(TC.get_time("24:00:00"))
-        self.assertIsNone(TC.get_time("24:00:01"))
-        self.assertIsNone(TC.get_time("24:01:01"))
+        with self.assertRaises(ValueError):
+            TC.get_time("24:00")
+            TC.get_time("24:01")
+            TC.get_time("24:00:00")
+            TC.get_time("24:00:01")
+            TC.get_time("24:01:01")
+            TC.get_time("24:01:00")
 
-        self.assertIsNone(TC.get_time("0"))
+        self.assertRaises(ValueError, TC.get_time, "0")
         self.assertIsNotNone(TC.get_time("0:00"))
         self.assertIsNotNone(TC.get_time("0:00:00"))
-        self.assertIsNone(TC.get_time("00:60"))
-        self.assertIsNone(TC.get_time("00:00:60"))
+        self.assertRaises(ValueError, TC.get_time, "00:60")
+        self.assertRaises(ValueError, TC.get_time, "00:00:60")
 
         self.assertIsNotNone(TC.get_time("23:59"))
         self.assertIsNotNone(TC.get_time("23:00:59"))
@@ -63,13 +66,16 @@ class TestGetTimeMethod(unittest.TestCase):
     def testClock12hr(self):
         for meridiem in self.meridiems:
 
-            # testing over limits (h = 13, m/s = 60)
-            self.assertIsNone(TC.get_time("13:00%s" % meridiem))
-            self.assertIsNone(TC.get_time("1:60%s" % meridiem))
-            self.assertIsNone(TC.get_time("1:00:60%s" % meridiem))
+            with self.assertRaises(ValueError):
+                # testing over limits (h = 13, m/s = 60)
+                TC.get_time("13:00%s" % meridiem)
+                TC.get_time("1:60%s" % meridiem)
+                TC.get_time("1:00:60%s" % meridiem)
+                TC.get_time()
+                self.assertRaises(ValueError, TC.get_time, )
 
-            # cannot give 0 as an hour
-            self.assertIsNone(TC.get_time("0:00%s" % meridiem))
+                # cannot give 0 as an hour
+                self.assertRaises(ValueError, TC.get_time, "0:00%s" % meridiem)
 
             # testing equal to limits (h = 12, m/s = 59)
             self.assertIsNotNone(TC.get_time("12:00%s" % meridiem))
@@ -83,18 +89,19 @@ class TestGetTimeMethod(unittest.TestCase):
             # testing that single hour clock formats work
             self.assertIsNotNone(TC.get_time("1%s" % meridiem))
             # cannot give 0 as an hour
-            self.assertIsNone(TC.get_time("0%s" % meridiem))
+            self.assertRaises(ValueError, TC.get_time,  "0%s" % meridiem)
             # testing over limit (h = 13)
-            self.assertIsNone(TC.get_time("13%s" % meridiem))
+            self.assertRaises(ValueError, TC.get_time, "13%s" % meridiem)
             # testing equal to limits (h = 12)
             self.assertIsNotNone(TC.get_time("12%s" % meridiem))
 
 
     def testBadMeridiems(self):
         for meridiem in self.badMeridiems:
-            self.assertIsNone(TC.get_time("12%s" % meridiem))
-            self.assertIsNone(TC.get_time("12:00%s" % meridiem))
-            self.assertIsNone(TC.get_time("12:00:00%s" % meridiem))
+            with self.assertRaises(ValueError):
+                TC.get_time("12%s" % meridiem)
+                TC.get_time("12:00%s" % meridiem)
+                TC.get_time("12:00:00%s" % meridiem)
 
         
 class TestDelayMessage(unittest.TestCase):

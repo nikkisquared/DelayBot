@@ -30,4 +30,3 @@ def create_message(dm):
     print dm["stream"]
     print dm["topic"]
     return message
-
