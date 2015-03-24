@@ -40,7 +40,7 @@ def parse_time(arg, msgTime):
         return output, None
 
     delayTime = get_time_delay(time, msgTime)
-    unix = calendar.timegm(delayTime.utctimetuple())
+    unix = calendar.timegm(delayTime.timetuple())
     output += "\nYou have delayed to: %s" % delayTime
     output += "\nThe unix encoding for this is: %s" % unix
 
