@@ -166,6 +166,18 @@ class DelayBot(object):
             db.commit()
 
 
+    def handle_error(e):
+        """Handles everything with a given error to print it, and send it to the user"""
+
+        error = e.message
+        error = error.replace(" H", " Hour")
+        error = error.replace(" M", " Minute")
+        error = error.replace(" S", " Second")
+        print error
+        event["message"]["content"] = error
+        self.send_message(event["message"]) 
+
+
     def main(self):
         """Blocking call that runs forever. Calls self.respond() on every message received."""
 
@@ -173,11 +185,11 @@ class DelayBot(object):
         queue_id = registration["queue_id"]
         last_event_id = registration["last_event_id"]
 
-
         while True:
 
             results = self.client.get_events(queue_id=queue_id, 
                         last_event_id=last_event_id, dont_block=True)
+
             if results.get("events") == None:
                 continue
 
@@ -186,17 +198,12 @@ class DelayBot(object):
                 last_event_id = max(last_event_id, event["id"])
                 if "message" in event.keys():
                     try:
-                        self.respond(event["message"])
+                        output, delay_message = self.respond(event["message"])
                     except ValueError as e:
-                        error = e.message
-                        error = error.replace(" H", " Hour")
-                        error = error.replace(" M", " Minute")
-                        error = error.replace(" S", " Second")
-                        print error
-                        event["message"]["content"] = error
-                        self.send_message(event["message"]) 
-
-                    #print event["message"]["timestamp"]
+                        self.handle_error(e)
+                        continue
+                    self.send_message(output) 
+                    self.add_message_to_db(delay_message)
 
             now = int(time.time()) 
             print now
@@ -209,7 +216,7 @@ key_word = "DelayBot"
 # an empty list will make it subscribe to all streams
 subscribed_streams = ["test-bot"]
 
-# won"t run DelayBot when this file is imported
+# won't run DelayBot when this file is imported
 if __name__ == "__main__":
    new_bot = DelayBot(zulip_username, zulip_api_key, key_word, subscribed_streams)
    new_bot.main()
