@@ -44,7 +44,9 @@ def parse_time(arg, msgTime):
     output += "\nYou have delayed to: %s" % delayTime
     output += "\nThe unix encoding for this is: %s" % unix
 
+
     return output, unix
+
 
 
 def check_block_time(arg, time):
@@ -196,6 +198,7 @@ def get_time_delay(time, msgTime):
     if timeDelay.day > (msgTime.day + 1):
         timeDelay = datetime(msgTime.year, msgTime.month,
                             msgTime.day + 1, 23, 59, 59)
+
 
     return timeDelay
 
