@@ -87,8 +87,8 @@ class DelayBot(object):
         """
 
         if private:
-            stream = content[0].replace("_", " ")
-            topic = content[1].replace("_", " ")
+            stream = content[0:0].replace("_", " ")
+            topic = content[1:1].replace("_", " ")
         else:
             stream = msg["display_recipient"]
             topic = msg["subject"]
@@ -96,47 +96,55 @@ class DelayBot(object):
         return stream, topic
 
 
-    def respond(self, msg):  #EH: this method needs serious refactoring
+    def is_valid_message(self, content, sender, private, stream):
+        activation_word = content[0].lower()
+        command_terms = len(content)
+
+
+        if activation_word != self.key_word:
+            return False
+        elif "delaybot" in sender.lower():
+            return False
+        elif command_terms<3 or (private and command_terms<5):
+            return False
+        elif stream not in self.stream_names:
+            return False
+            #raise ValueError("There is no stream \"%s\"." % stream) 
+        else:
+            return True
+
+            #raise ValueError("Not enough commands given. You must "
+            #            "specify a delay time, stream, topic, and message.")
+            #raise ValueError("Not enough commands given. You must "
+            #            "specify a delay time and message.")
+            
+
+    def respond(self, msg):  
         """Checks msg against key_word. If key_word is in msg, calls send_message()"""
 
         content = msg["content"].split(" ")
         private = (msg["type"] == "private")
 
-        # keyword must be used in message, and
-        # delaybot doesn"t call itself to prevent recursion glitches
-        if (content[0].lower() != self.key_word or 
-            "delaybot" in msg["sender_full_name"].lower()):
-            return None
-
-        # private calls need to add a stream and topic name
-        # public calls need to give a delay time and message
-        if len(content) < 3 or (private and len(content) < 5):
-            if private:
-                raise ValueError("Not enough commands given. You must "
-                        "specify a delay time, stream, topic, and message.")
-            raise ValueError("Not enough commands given. You must "
-                        "specify a delay time and message.")
-
         stream, topic = self.parse_destination(content[2:], msg, private)
-        if stream not in self.stream_names:
-            raise ValueError("There is no stream \"%s\"." % stream)
+        
+        if self.is_valid_message(content, msg["sender_full_name"], private, stream):
 
-        timestamp, date = TC.parse_time(content[1], msg["timestamp"])
-        msg["content"] = "\nYou have delayed to: %s" % date
-        msg["content"] += "\nThe unix encoding for this is: %s" % timestamp
+            timestamp, date = TC.parse_time(content[1], msg["timestamp"])
+            msg["content"] = "\nYou have delayed to: %s" % date
+            msg["content"] += "\nThe unix encoding for this is: %s" % timestamp
 
-        # this refers to the start position of the message to be sent
-        message_offset = 2
-        if private: message_offset += 2
-        message = " ".join([str(x) for x in content[message_offset:]])
-        dm = DM.delay_message(timestamp, msg["sender_full_name"],
-                            self.currentUid, stream, topic, message)
-        self.currentUid += 1
-        # we should not be editing raw message throughout, create a new one
-        # nikki here: I know, I want to implement an error system instead
-        # of clumsily editing messages. this will do for now though...
-        self.send_message(msg) 
-        self.add_message_to_db(dm)
+            # this refers to the start position of the message to be sent
+            message_offset = 2
+            if private: message_offset += 2
+            message = " ".join([str(x) for x in content[message_offset:]])
+            dm = DM.delay_message(timestamp, msg["sender_full_name"],
+                                self.currentUid, stream, topic, message)
+            self.currentUid += 1
+            # we should not be editing raw message throughout, create a new one
+            # nikki here: I know, I want to implement an error system instead
+            # of clumsily editing messages. this will do for now though...
+            self.send_message(msg) 
+            self.add_message_to_db(dm)
 
 
     def check_db(self, unix_timestamp ):
