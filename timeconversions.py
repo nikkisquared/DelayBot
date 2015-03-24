@@ -33,11 +33,7 @@ def parse_time(arg, msg_time):
     output = u"%s" % arg
 
     time = get_time(arg)
-    if time:
-        output += " is a proper time signature"
-    else:
-        output += " is not proper!!!! nope"
-        return output, None
+    output += " is a proper time signature"
 
     time_delay = get_time_delay(time, msg_time)
     unix = calendar.timegm(time_delay.utctimetuple())
@@ -58,21 +54,15 @@ def check_block_time(arg, time):
 
         char = value[-1]
         if time[char] != 0:
-            # ERROR! already defined
-            print "You defined a time twice!"
-            return None
+            raise ValueError("You defined the time for %s twice." % char)
 
         time[char] = int(value[:-1])
         total += time[char]
         if time[char] > block_limits[char]:
-            # ERROR! value too high for certain units
-            print "Value for %s is too high!" %char
-            return None
+            raise ValueError("%s is too high for %s in block format." % (time[char], char))
 
     if total == 0:
-        # ERROR! all values given are 0
-        print "You must specify at least one non-zero value"
-        return None
+        raise ValueError("You must specify at least one non-zero value.")
 
     return time
 
@@ -95,9 +85,7 @@ def check_clock_time(arg, time):
     arg[-1] = arg[-1][:meridiem_point]
 
     if time["meridiem"] not in meridiems:
-        # ERROR! text at end that isn't a meridiem
-        print "%s is not a meridiem" % time["meridiem"]
-        return None
+        raise ValueError("\"%s\" is not a meridiem." % time["meridiem"])
 
     # specifies clock mode based on valid time["meridiem"]
     # if no meridiem was given, it must be 24hr time
@@ -105,29 +93,24 @@ def check_clock_time(arg, time):
     global clock_limits
     clock_limits[0] = 23 if time["meridiem"] == "" else 12
 
-    if len(arg) < 1 or len(arg) > 3:
-        # ERROR! missing values
-        print "Clock time must be Hh or Hh:Mm or Hh:Mm:Ss"
-        return None
+    if len(arg) > 3:
+        raise ValueError("Clock time must be Hh, Hh:Mm, or Hh:Mm:Ss.")
 
     for i, value in enumerate(arg):
 
         if not value.isdigit():
-            # ERROR! non-numeric value
-            print "Non-numeric value!"
-            return None
+            if value:
+                raise ValueError("You must give only numbers for time, not \"%s\"." % value)
+            else:
+                raise ValueError("You didn't specify any time for %s." % clock_format[i])
 
-        if int(value) > clock_limits[i]:
-            # ERROR! value too high
-            print "Value for %s too high!" % time[clock_format[i]]
-            return None
-
-        time[clock_format[i]] = int(value)
+        value = int(value)
+        if value > clock_limits[i]:
+            raise ValueError("%s is too high for %s in clock format." % (value, clock_format[i]))
+        time[clock_format[i]] = value
 
     if time["meridiem"] and time["H"] == 0:
-        # ERROR! no hour given for 12hr clock format
-        print "You must give an hour from 1 to 12 for 12hr clock format"
-        return None
+        raise ValueError("You cannot give zero for a 12hr clock H.")
 
     return time
 
@@ -154,9 +137,7 @@ def get_time(arg):
             arg[-4:] in meridiems):
         time["format"] = "single"
     else:
-        # ERROR! not a valid format
-        print "Not a valid block or clock format!"
-        return None
+        raise ValueError("%s is not a valid format." % arg)
 
     if time["format"] == "block":
         time = check_block_time(arg, time)
@@ -183,10 +164,12 @@ def get_time_delay(time, msg_time):
         time_delay = msg_time + delta
 
     elif time["format"] in ("clock", "single"):
+
         if time["H"] == 12:
             time["H"] = 0
         if "P" in time["meridiem"]:
             time["H"] += 12
+
         time_delay = datetime(msg_time.year, msg_time.month,
                             msg_time.day, time["H"], time["M"], time["S"])
         if time_delay < msg_time:

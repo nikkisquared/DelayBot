@@ -15,8 +15,8 @@ class DelayBot(object):
     def __init__(self, zulip_username, zulip_api_key, key_word, subscribed_streams=[]):
         """
         DelayBot takes a zulip username and api key,
-        and a list of the zulip streams it should be active in.
-        It keeps information used for parsing commands here
+        a key word to respond to (case insensitive),
+        and a list of the zulip streams it should be active in
         """
         self.username = zulip_username
         self.api_key = zulip_api_key
@@ -35,7 +35,7 @@ class DelayBot(object):
 
     @property
     def streams(self):
-        """Standardizes a list of streams in the form [{'name': stream}]"""
+        """Standardizes a list of streams in the form [{"name": stream}]"""
         if not self.subscribed_streams:
             streams = [{"name": stream["name"]} for stream in self.get_all_zulip_streams()]
             return streams
@@ -53,7 +53,7 @@ class DelayBot(object):
         elif response.status_code == 401:
             raise RuntimeError("check your auth")
         else:
-            raise RuntimeError(":( we failed to GET streams.\n(%s)" % response)
+            raise RuntimeError("Failed to GET streams.\n(%s)" % response)
 
 
     def subscribe_to_streams(self):
@@ -100,65 +100,63 @@ class DelayBot(object):
         content = msg["content"].split(" ")
         private = (msg["type"] == "private")
 
-        if content[0].lower() == self.key_word:
-            
-            # delaybot doesn't call itself to prevent recursion glitches
-            if "delaybot" in msg["sender_full_name"].lower(): 
-                return None
+        # keyword must be used in message, and
+        # delaybot doesn"t call itself to prevent recursion glitches
+        if (content[0].lower() != self.key_word or 
+            "delaybot" in msg["sender_full_name"].lower()):
+            return None
 
-            # public calls need to give a delay time and message
-            # private calls need to add a stream and topic name
-            elif len(content) < 3 or (private and len(content) < 5): 
-                msg["content"] = "Not enough commands given!" 
-                self.send_message(msg)
-                return None
-            
-            elif stream not in self.stream_names:
-                msg["content"] = "There is no stream known as %s" % stream 
-                self.send_message(msg)
-                return None
-                
-            else:
-                # variable renaming needed?
-                # nikki here: yeah this is not ideal, see my note below
-                msg["content"], timestamp = TC.parse_time(content[1], msg["timestamp"])
-                
-                stream, topic = self.parse_destination(content[2:], msg, private)
-                # this refers to the start position of the message to be sent
-                message_offset = 2
-                if private: message_offset += 2
-                message = " ".join([str(x) for x in content[message_offset:]])
-                dm = DM.delay_message(timestamp, msg["sender_full_name"],
-                                    self.currentUid, stream, topic, message)
-                self.currentUid += 1
-                # we should not be editing raw message throughout, create a new one
-                # nikki here: I know, I want to implement an error system instead
-                # of clumsily editing messages. this will do for now though...
-                self.send_message(msg) 
-                self.add_message_to_db(dm)
+        # private calls need to add a stream and topic name
+        # public calls need to give a delay time and message
+        if len(content) < 3 or (private and len(content) < 5):
+            if private:
+                raise ValueError("Not enough commands given. You must "
+                        "specify a delay time, stream, topic, and message.")
+            raise ValueError("Not enough commands given. You must "
+                        "specify a delay time and message.")
+
+        stream, topic = self.parse_destination(content[2:], msg, private)
+        if stream not in self.stream_names:
+            raise ValueError("There is no stream \"%s\"." % stream)
+
+        # variable renaming needed?
+        # nikki here: yeah this is not ideal, see my note below
+        msg["content"], timestamp = TC.parse_time(content[1], msg["timestamp"])
+        # this refers to the start position of the message to be sent
+        message_offset = 2
+        if private: message_offset += 2
+        message = " ".join([str(x) for x in content[message_offset:]])
+        dm = DM.delay_message(timestamp, msg["sender_full_name"],
+                            self.currentUid, stream, topic, message)
+        self.currentUid += 1
+        # we should not be editing raw message throughout, create a new one
+        # nikki here: I know, I want to implement an error system instead
+        # of clumsily editing messages. this will do for now though...
+        self.send_message(msg) 
+        #self.add_message_to_db(dm)
 
 
     def check_db(self, unix_timestamp=int(time.time()) ):
 
         with dataset.connect() as db:
-            results = db.query('SELECT * FROM messages WHERE timestamp<%s'%unix_timestamp)
+            results = db.query("SELECT * FROM messages WHERE timestamp<%s"%unix_timestamp)
             for result in results:
                 msg = DM.create_message(result)
                 self.send_message(msg)
                 self.remove_message_from_db(result)
-            # for res in db['messages'].all(): 
+            # for res in db["messages"].all(): 
             #     print [ (x, res[x]) for x in res.keys()]
 
 
     def add_message_to_db(self, delay_message):
         with dataset.connect() as db:
-            db['messages'].insert(delay_message)
+            db["messages"].insert(delay_message)
             db.commit()
 
 
     def remove_message_from_db(self, result):
         with dataset.connect() as db:
-            db['messages'].delete(id=result['id'])
+            db["messages"].delete(id=result["id"])
             db.commit()
 
 
@@ -175,16 +173,28 @@ class DelayBot(object):
 
             results = self.client.get_events(queue_id=queue_id, 
                         last_event_id=last_event_id, dont_block=True)
+            if results.get("events") == None:
+                continue
 
-            for event in results['events']:
+            for event in results["events"]:
 
-                last_event_id = max(last_event_id, event['id'])
+                last_event_id = max(last_event_id, event["id"])
                 if "message" in event.keys():
-                    self.respond(event["message"])
-                    print event["message"]['timestamp']
+                    try:
+                        self.respond(event["message"])
+                    except ValueError as e:
+                        error = e.message
+                        error = error.replace(" H", " Hour")
+                        error = error.replace(" M", " Minute")
+                        error = error.replace(" S", " Second")
+                        print error
+                        event["message"]["content"] = error
+                        self.send_message(event["message"]) 
 
-            print int(time.time()) 
-            self.check_db()
+                    print event["message"]["timestamp"]
+
+            #print int(time.time()) 
+            #self.check_db()
             
 
     def lazy_hack_function_for_time_differences(self, queue_id, last_event_id):
@@ -202,17 +212,17 @@ class DelayBot(object):
         self.send_message(test_message)
         returned_messages = self.client.get_events(queue_id=queue_id, 
                             last_event_id=last_event_id, dont_block=True)
-        zulipstamp = returned_messages['events'][-1]['message']['timestamp']
-        print zulipstamp, time.time(), zulipstamp-time.time(), test_message['content']
+        zulipstamp = returned_messages["events"][-1]["message"]["timestamp"]
+        print zulipstamp, time.time(), zulipstamp-time.time(), test_message["content"]
 
 
-zulip_username = os.environ['DELAYBOT_USR']
-zulip_api_key = os.environ['DELAYBOT_API']
+zulip_username = os.environ["DELAYBOT_USR"]
+zulip_api_key = os.environ["DELAYBOT_API"]
 key_word = "DelayBot"
 # an empty list will make it subscribe to all streams
 subscribed_streams = ["test-bot"]
 
-# won't run DelayBot when this file is imported
+# won"t run DelayBot when this file is imported
 if __name__ == "__main__":
    new_bot = DelayBot(zulip_username, zulip_api_key, key_word, subscribed_streams)
    new_bot.main()
