@@ -31,9 +31,3 @@ def create_message(dm):
     print dm["topic"]
     return message
 
-
-def dm_list_to_json(dm_list):  #move these later
-    return json.dumps(dm_list)
-
-def json_to_dm_list(from_json):
-    return json.loads(from_json)
