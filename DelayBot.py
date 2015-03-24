@@ -139,16 +139,19 @@ class DelayBot(object):
         self.add_message_to_db(dm)
 
 
-    def check_db(self, unix_timestamp=int(time.time()) ):
-
+    def check_db(self, unix_timestamp ):
         with dataset.connect() as db:
-            results = db.query("SELECT * FROM messages WHERE timestamp<%s"%unix_timestamp)
+            results = db.query("SELECT * FROM messages WHERE timestamp<%d"%unix_timestamp)
+            print results
             for result in results:
                 msg = DM.create_message(result)
                 self.send_message(msg)
                 self.remove_message_from_db(result)
-            # for res in db["messages"].all(): 
-            #     print [ (x, res[x]) for x in res.keys()]
+
+                print result
+            for res in db["messages"].all(): 
+                print [ (x, res[x]) for x in res.keys()]
+            db.commit()
 
 
     def add_message_to_db(self, delay_message):
@@ -170,7 +173,6 @@ class DelayBot(object):
         queue_id = registration["queue_id"]
         last_event_id = registration["last_event_id"]
 
-        self.lazy_hack_function_for_time_differences(queue_id,last_event_id)
 
         while True:
 
@@ -196,8 +198,9 @@ class DelayBot(object):
 
                     #print event["message"]["timestamp"]
 
-            #print int(time.time()) 
-            self.check_db()
+            now = int(time.time()) 
+            print now
+            self.check_db(now)
 
 
 zulip_username = os.environ["DELAYBOT_USR"]
