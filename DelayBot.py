@@ -133,16 +133,19 @@ class DelayBot(object):
         #self.add_message_to_db(delay_message)
 
 
-    def check_db(self, unix_timestamp=int(time.time()) ):
-
+    def check_db(self, unix_timestamp ):
         with dataset.connect() as db:
-            results = db.query("SELECT * FROM messages WHERE timestamp<%s"%unix_timestamp)
+            results = db.query("SELECT * FROM messages WHERE timestamp<%d"%unix_timestamp)
+            print results
             for result in results:
                 msg = DM.create_message(result)
                 self.send_message(msg)
                 self.remove_message_from_db(result)
-            # for res in db["messages"].all(): 
-            #     print [ (x, res[x]) for x in res.keys()]
+
+                print result
+            for res in db["messages"].all(): 
+                print [ (x, res[x]) for x in res.keys()]
+            db.commit()
 
 
     def add_message_to_db(self, delay_message):
@@ -182,9 +185,12 @@ class DelayBot(object):
                         last_event_id=last_event_id, dont_block=True)
 
             if results.get("events") == None:
+                print 'yo'
                 continue
+            print results
 
             for event in results["events"]:
+                print event
 
                 last_event_id = max(last_event_id, event["id"])
                 if "message" in event.keys():
@@ -193,9 +199,12 @@ class DelayBot(object):
                     except ValueError as e:
                         self.handle_error(e)
                         continue
+                    # self.send_message(output) 
+                    # self.add_message_to_db(delay_message)
 
-            #print int(time.time())
-            #self.check_db()
+            now = int(time.time()) 
+            print now
+            self.check_db(now)
 
 
 zulip_username = os.environ["DELAYBOT_USR"]
