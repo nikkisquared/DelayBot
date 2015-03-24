@@ -9,21 +9,21 @@ import calendar
 # hardcoded data information for verifying input
 
 # time limits for block format: days, hours, minutes, seconds
-blockLimits = {'D': 1, 'H': 24, 'M': 60, 'S': 60}
+block_limits = {'D': 1, 'H': 24, 'M': 60, 'S': 60}
 regexp = "[0-9]{1,2}[HMDS]{1}"
 # verifies block format
-blockRegexpMatch = re.compile("^(%s){1,4}$" % regexp)
+block_regexp_match = re.compile("^(%s){1,4}$" % regexp)
 # filters parts out of block format
-blockRegexpFind = re.compile(regexp)
+block_regexp_find = re.compile(regexp)
 
 # valid meridiems (including none given)
 meridiems = set(["AM", 'PM', "A.M.", "P.M.", ""])
 # time limits for clock format: hours, minutes, seconds
-clockFormat = ["H", "M", "S"]
-clockLimits = [23, 59, 59]
+clock_format = ["H", "M", "S"]
+clock_limits = [23, 59, 59]
 
 
-def parse_time(arg, msgTime):
+def parse_time(arg, msg_time):
     """
     Handles parsing a given time message
     Returns an output message and a unix timestamp,
@@ -39,9 +39,9 @@ def parse_time(arg, msgTime):
         output += " is not proper!!!! nope"
         return output, None
 
-    delayTime = get_time_delay(time, msgTime)
-    unix = calendar.timegm(delayTime.utctimetuple())
-    output += "\nYou have delayed to: %s" % delayTime
+    time_delay = get_time_delay(time, msg_time)
+    unix = calendar.timegm(time_delay.utctimetuple())
+    output += "\nYou have delayed to: %s" % time_delay
     output += "\nThe unix encoding for this is: %s" % unix
 
     return output, unix
@@ -50,7 +50,7 @@ def parse_time(arg, msgTime):
 def check_block_time(arg, time):
     """Filters time for variable length block format"""
 
-    arg = blockRegexpFind.findall(arg)
+    arg = block_regexp_find.findall(arg)
     # used to check if all values are 0
     total = 0
 
@@ -64,7 +64,7 @@ def check_block_time(arg, time):
 
         time[char] = int(value[:-1])
         total += time[char]
-        if time[char] > blockLimits[char]:
+        if time[char] > block_limits[char]:
             # ERROR! value too high for certain units
             print "Value for %s is too high!" %char
             return None
@@ -82,17 +82,17 @@ def check_clock_time(arg, time):
 
     # clock times are in the format Hh:Mm(:Ss)[meridiem]
     # so the meridiem will always start at the 3rd character
-    meridiemPoint = 2
+    meridiem_point = 2
     if time["format"] == "clock":
         arg = arg.split(":")
     elif time["format"] == "single":
         # if the length is odd, that means that the hour is a single digit
-        # and meridiemPoint needs to account for that. ie 1am vs 12am
-        meridiemPoint -= len(arg) % 2
+        # and meridiem_point needs to account for that. ie 1am vs 12am
+        meridiem_point -= len(arg) % 2
         # rest of function expects a list
         arg = [arg]
-    time["meridiem"] = arg[-1][meridiemPoint:]
-    arg[-1] = arg[-1][:meridiemPoint]
+    time["meridiem"] = arg[-1][meridiem_point:]
+    arg[-1] = arg[-1][:meridiem_point]
 
     if time["meridiem"] not in meridiems:
         # ERROR! text at end that isn't a meridiem
@@ -102,8 +102,8 @@ def check_clock_time(arg, time):
     # specifies clock mode based on valid time["meridiem"]
     # if no meridiem was given, it must be 24hr time
     # otherwise, it is 12hr time. either way, the limit must be right
-    global clockLimits
-    clockLimits[0] = 23 if time["meridiem"] == "" else 12
+    global clock_limits
+    clock_limits[0] = 23 if time["meridiem"] == "" else 12
 
     if len(arg) < 1 or len(arg) > 3:
         # ERROR! missing values
@@ -117,12 +117,12 @@ def check_clock_time(arg, time):
             print "Non-numeric value!"
             return None
 
-        if int(value) > clockLimits[i]:
+        if int(value) > clock_limits[i]:
             # ERROR! value too high
-            print "Value for %s too high!" % time[clockFormat[i]]
+            print "Value for %s too high!" % time[clock_format[i]]
             return None
 
-        time[clockFormat[i]] = int(value)
+        time[clock_format[i]] = int(value)
 
     if time["meridiem"] and time["H"] == 0:
         # ERROR! no hour given for 12hr clock format
@@ -146,7 +146,7 @@ def get_time(arg):
 
     arg = arg.upper()
 
-    if blockRegexpMatch.match(arg):
+    if block_regexp_match.match(arg):
         time["format"] = "block"
     elif ":" in arg:
         time["format"] = "clock"
@@ -167,39 +167,34 @@ def get_time(arg):
     return time
 
 
-def get_time_delay(time, msgTime):
+def get_time_delay(time, msg_time):
     """
     Converts a given time to a datetime object at a later date
     uses the original zulip message timestamp for some calculations
-    timeDelay will be truncated to 11:59PM the next day if it goes over
+    time_delay will be truncated to 11:59PM the next day if it goes over
     """
 
-    msgTime = datetime.fromtimestamp(msgTime)
-    timeDelay = None
+    msg_time = datetime.fromtimestamp(msg_time)
+    time_delay = None
 
     if time["format"] == "block":
         delta = timedelta(days=time["D"], hours=time["H"], 
                         minutes=time["M"], seconds=time["S"])
-        timeDelay = msgTime + delta
+        time_delay = msg_time + delta
 
     elif time["format"] in ("clock", "single"):
         if time["H"] == 12:
             time["H"] = 0
         if "P" in time["meridiem"]:
             time["H"] += 12
-        timeDelay = datetime(msgTime.year, msgTime.month,
-                            msgTime.day, time["H"], time["M"], time["S"])
-        if timeDelay < msgTime:
-            timeDelay += timedelta(days=1)
+        time_delay = datetime(msg_time.year, msg_time.month,
+                            msg_time.day, time["H"], time["M"], time["S"])
+        if time_delay < msg_time:
+            time_delay += timedelta(days=1)
 
     # gives a hard limit to how long it can delay until
-    if timeDelay.day > (msgTime.day + 1):
-        timeDelay = datetime(msgTime.year, msgTime.month,
-                            msgTime.day + 1, 23, 59, 59)
+    if time_delay.day > (msg_time.day + 1):
+        time_delay = datetime(msg_time.year, msg_time.month,
+                            msg_time.day + 1, 23, 59, 59)
 
-    return timeDelay
-
-
-def convert_to_unix(dt):
-    """Converts a given datetime object to unix seconds"""
-    return 
+    return time_delay
