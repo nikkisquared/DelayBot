@@ -139,8 +139,8 @@ class DelayBot(object):
                 msg = DM.create_message(result)
                 self.send_message(msg)
                 self.remove_message_from_db(result)
-            # for res in db['messages'].all():
-            #     print [ (x, res[x]) for x in res.keys()]
+            for res in db['messages'].all(): 
+                print [ (x, res[x]) for x in res.keys()]
 
     def add_message_to_db(self, delay_message):
         with dataset.connect() as db:
