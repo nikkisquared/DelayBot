@@ -147,24 +147,16 @@ class DelayBot(object):
             db['messages'].insert(delay_message)
             db.commit()
 
-    def remove_message_from_db(self, r):
+    def remove_message_from_db(self, result):
         with dataset.connect() as db:
-            db['messages'].delete(id=r['id'])
+            db['messages'].delete(id=result['id'])
             db.commit()
-
-   
-        pass
-
 
     def main(self):
         """Blocking call that runs forever. Calls self.respond() on every message received."""
         registration = self.client.register(json.dumps(["message"]))
         queue_id = registration["queue_id"]
         last_event_id = registration["last_event_id"]
-
-        with dataset.connect() as db:
-            db['messages'].delete()
-            db.commit()
 
         while True:
             results = self.client.get_events(queue_id=queue_id,last_event_id=last_event_id, dont_block=True)
@@ -175,14 +167,6 @@ class DelayBot(object):
             print int(time.time())
             self.check_db()
             
-            #time.sleep(1)
-
-
-
-
-
-        #self.client.call_on_each_message(lambda msg: self.respond(msg))
-
 
 zulip_username = os.environ['DELAYBOT_USR']
 zulip_api_key = os.environ['DELAYBOT_API']
