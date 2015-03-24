@@ -133,7 +133,7 @@ class DelayBot(object):
         # nikki here: I know, I want to implement an error system instead
         # of clumsily editing messages. this will do for now though...
         self.send_message(msg) 
-        #self.add_message_to_db(dm)
+        self.add_message_to_db(dm)
 
 
     def check_db(self, unix_timestamp=int(time.time()) ):
@@ -194,7 +194,7 @@ class DelayBot(object):
                     print event["message"]["timestamp"]
 
             #print int(time.time()) 
-            #self.check_db()
+            self.check_db()
             
 
     def lazy_hack_function_for_time_differences(self, queue_id, last_event_id):

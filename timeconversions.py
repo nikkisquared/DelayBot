@@ -36,7 +36,7 @@ def parse_time(arg, msg_time):
     output += " is a proper time signature"
 
     time_delay = get_time_delay(time, msg_time)
-    unix = calendar.timegm(time_delay.utctimetuple())
+    unix = calendar.timegm(time_delay.timetuple())
     output += "\nYou have delayed to: %s" % time_delay
     output += "\nThe unix encoding for this is: %s" % unix
 
