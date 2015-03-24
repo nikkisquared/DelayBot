@@ -25,8 +25,7 @@ clock_limits = [23, 59, 59]
 def parse_time(arg, msg_time):
     """
     Handles parsing a given time message
-    Returns an output message and a unix timestamp,
-    or an error explanation and None
+    Returns unix time and the datetime it represents
     """
 
     time_dict = get_time(arg)
@@ -36,7 +35,7 @@ def parse_time(arg, msg_time):
     return unix, time_delay
 
 
-def check_block_time(arg, time):
+def check_block_time(arg, time_dict):
     """Filters time for variable length block format"""
 
     arg = block_regexp_find.findall(arg)
@@ -46,45 +45,45 @@ def check_block_time(arg, time):
     for value in arg:
 
         char = value[-1]
-        if time[char] != 0:
+        if time_dict[char] != 0:
             raise ValueError("You defined the time for %s twice." % char)
 
-        time[char] = int(value[:-1])
-        total += time[char]
-        if time[char] > block_limits[char]:
-            raise ValueError("%s is too high for %s in block format." % (time[char], char))
+        time_dict[char] = int(value[:-1])
+        total += time_dict[char]
+        if time_dict[char] > block_limits[char]:
+            raise ValueError("%s is too high for %s in block format." % (time_dict[char], char))
 
     if total == 0:
         raise ValueError("You must specify at least one non-zero value.")
 
-    return time
+    return time_dict
 
 
-def check_clock_time(arg, time):
+def check_clock_time(arg, time_dict):
     """Filters time for 24hr and 12hr clocks, or single hours"""
 
     # clock times are in the format Hh:Mm(:Ss)[meridiem]
     # so the meridiem will always start at the 3rd character
     meridiem_point = 2
-    if time["format"] == "clock":
+    if time_dict["format"] == "clock":
         arg = arg.split(":")
-    elif time["format"] == "single":
+    elif time_dict["format"] == "single":
         # if the length is odd, that means that the hour is a single digit
         # and meridiem_point needs to account for that. ie 1am vs 12am
         meridiem_point -= len(arg) % 2
         # rest of function expects a list
         arg = [arg]
-    time["meridiem"] = arg[-1][meridiem_point:]
+    time_dict["meridiem"] = arg[-1][meridiem_point:]
     arg[-1] = arg[-1][:meridiem_point]
 
-    if time["meridiem"] not in meridiems:
-        raise ValueError("\"%s\" is not a meridiem." % time["meridiem"])
+    if time_dict["meridiem"] not in meridiems:
+        raise ValueError("\"%s\" is not a meridiem." % time_dict["meridiem"])
 
-    # specifies clock mode based on valid time["meridiem"]
+    # specifies clock mode based on valid time_dict["meridiem"]
     # if no meridiem was given, it must be 24hr time
     # otherwise, it is 12hr time. either way, the limit must be right
     global clock_limits
-    clock_limits[0] = 23 if time["meridiem"] == "" else 12
+    clock_limits[0] = 23 if time_dict["meridiem"] == "" else 12
 
     if len(arg) > 3:
         raise ValueError("Clock time must be Hh, Hh:Mm, or Hh:Mm:Ss.")
@@ -100,12 +99,12 @@ def check_clock_time(arg, time):
         value = int(value)
         if value > clock_limits[i]:
             raise ValueError("%s is too high for %s in clock format." % (value, clock_format[i]))
-        time[clock_format[i]] = value
+        time_dict[clock_format[i]] = value
 
-    if time["meridiem"] and time["H"] == 0:
+    if time_dict["meridiem"] and time_dict["H"] == 0:
         raise ValueError("You cannot give zero for a 12hr clock H.")
 
-    return time
+    return time_dict
 
 
 def get_time(arg):
@@ -118,30 +117,30 @@ def get_time(arg):
         single: 12AM, 12P.M.
     """
 
-    time = {"D": 0, "H": 0, "M": 0, "S": 0, "meridiem": "", "format": ""}
+    time_dict = {"D": 0, "H": 0, "M": 0, "S": 0, "meridiem": "", "format": ""}
 
     arg = arg.upper()
 
     if block_regexp_match.match(arg):
-        time["format"] = "block"
+        time_dict["format"] = "block"
     elif ":" in arg:
-        time["format"] = "clock"
+        time_dict["format"] = "clock"
     elif (arg[-2:] in meridiems or
             arg[-4:] in meridiems):
-        time["format"] = "single"
+        time_dict["format"] = "single"
     else:
         raise ValueError("%s is not a valid format." % arg)
 
-    if time["format"] == "block":
-        time = check_block_time(arg, time)
-    elif time["format"] in ("clock", "single"):
-        time = check_clock_time(arg, time)
+    if time_dict["format"] == "block":
+        time_dict = check_block_time(arg, time_dict)
+    elif time_dict["format"] in ("clock", "single"):
+        time_dict = check_clock_time(arg, time_dict)
 
-    print time
-    return time
+    print time_dict
+    return time_dict
 
 
-def get_time_delay(time, msg_time):
+def get_time_delay(time_dict, msg_time):
     """
     Converts a given time to a datetime object at a later date
     uses the original zulip message timestamp for some calculations
@@ -152,20 +151,20 @@ def get_time_delay(time, msg_time):
     print msg_time.timetuple()
     time_delay = None
 
-    if time["format"] == "block":
-        delta = datetime.timedelta(days=time["D"], hours=time["H"],
-                        minutes=time["M"], seconds=time["S"])
+    if time_dict["format"] == "block":
+        delta = datetime.timedelta(days=time_dict["D"], hours=time_dict["H"],
+                        minutes=time_dict["M"], seconds=time_dict["S"])
         time_delay = msg_time + delta
 
-    elif time["format"] in ("clock", "single"):
+    elif time_dict["format"] in ("clock", "single"):
 
-        if time["H"] == 12:
-            time["H"] = 0
-        if "P" in time["meridiem"]:
-            time["H"] += 12
+        if time_dict["H"] == 12:
+            time_dict["H"] = 0
+        if "P" in time_dict["meridiem"]:
+            time_dict["H"] += 12
 
         time_delay = datetime(msg_time.year, msg_time.month,
-                            msg_time.day, time["H"], time["M"], time["S"])
+                            msg_time.day, time_dict["H"], time_dict["M"], time_dict["S"])
         print time_delay.timetuple()
         if time_delay < msg_time:
             time_delay += timedelta(days=1)
