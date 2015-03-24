@@ -2,9 +2,8 @@
 
 # functions to handle time conversions
 
-import re, time
-from datetime import *
-import calendar
+import re, time, datetime
+
 
 # hardcoded data information for verifying input
 
@@ -30,17 +29,11 @@ def parse_time(arg, msg_time):
     or an error explanation and None
     """
 
-    output = u"%s" % arg
+    time_dict = get_time(arg)
+    time_delay = get_time_delay(time_dict, msg_time)
+    unix = time.mktime(time_delay.timetuple())
 
-    time = get_time(arg)
-    output += " is a proper time signature"
-
-    time_delay = get_time_delay(time, msg_time)
-    unix = calendar.timegm(time_delay.timetuple())
-    output += "\nYou have delayed to: %s" % time_delay
-    output += "\nThe unix encoding for this is: %s" % unix
-
-    return output, unix
+    return unix, time_delay
 
 
 def check_block_time(arg, time):
@@ -155,11 +148,12 @@ def get_time_delay(time, msg_time):
     time_delay will be truncated to 11:59PM the next day if it goes over
     """
 
-    msg_time = datetime.fromtimestamp(msg_time)
+    msg_time = datetime.datetime.fromtimestamp(msg_time)
+    print msg_time.timetuple()
     time_delay = None
 
     if time["format"] == "block":
-        delta = timedelta(days=time["D"], hours=time["H"], 
+        delta = datetime.timedelta(days=time["D"], hours=time["H"],
                         minutes=time["M"], seconds=time["S"])
         time_delay = msg_time + delta
 
@@ -172,6 +166,7 @@ def get_time_delay(time, msg_time):
 
         time_delay = datetime(msg_time.year, msg_time.month,
                             msg_time.day, time["H"], time["M"], time["S"])
+        print time_delay.timetuple()
         if time_delay < msg_time:
             time_delay += timedelta(days=1)
 

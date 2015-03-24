@@ -4,7 +4,9 @@ import zulip
 import requests
 import psycopg2
 import dataset
-import json, os, sys, time
+import json, os, sys
+import time
+import datetime
 
 import timeconversions as TC
 import delaymessage as DM
@@ -119,9 +121,10 @@ class DelayBot(object):
         if stream not in self.stream_names:
             raise ValueError("There is no stream \"%s\"." % stream)
 
-        # variable renaming needed?
-        # nikki here: yeah this is not ideal, see my note below
-        msg["content"], timestamp = TC.parse_time(content[1], msg["timestamp"])
+        timestamp, date = TC.parse_time(content[1], msg["timestamp"])
+        msg["content"] = "\nYou have delayed to: %s" % date
+        msg["content"] += "\nThe unix encoding for this is: %s" % timestamp
+
         # this refers to the start position of the message to be sent
         message_offset = 2
         if private: message_offset += 2
@@ -191,29 +194,10 @@ class DelayBot(object):
                         event["message"]["content"] = error
                         self.send_message(event["message"]) 
 
-                    print event["message"]["timestamp"]
+                    #print event["message"]["timestamp"]
 
             #print int(time.time()) 
             self.check_db()
-            
-
-    def lazy_hack_function_for_time_differences(self, queue_id, last_event_id):
-        """
-        there is a discrepancy between the timestamp from time.time() and that on messages.
-        As timeconversions module will require refactoring (for instance it has problems with
-        its namespace usage - time module etc...) here is a little module that highlights there is no difference.
-        """
-        test_message = {
-        "type": "private",
-        "sender_email": "delaybot-bot@students.hackerschool.com",
-        "content": time.time(),
-        "subject": "lazy_hack"
-        }
-        self.send_message(test_message)
-        returned_messages = self.client.get_events(queue_id=queue_id, 
-                            last_event_id=last_event_id, dont_block=True)
-        zulipstamp = returned_messages["events"][-1]["message"]["timestamp"]
-        print zulipstamp, time.time(), zulipstamp-time.time(), test_message["content"]
 
 
 zulip_username = os.environ["DELAYBOT_USR"]
