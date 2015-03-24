@@ -2,7 +2,9 @@
 
 import zulip
 import requests
-import json, os, sys
+import psycopg2
+import dataset
+import json, os, sys, time
 
 import timeconversions as TC
 import delaymessage as DM
@@ -90,7 +92,7 @@ class DelayBot(object):
         return stream, topic, messageOffset
 
 
-    def respond(self, msg):
+    def respond(self, msg):  #EH: this method needs serious refactoring
         """Checks msg against key_word. If key_word is in msg, calls send_message()"""
 
         # DelayBot isn't allowed to call itself
@@ -114,7 +116,7 @@ class DelayBot(object):
                 self.send_message(msg)
                 return None
             
-            msg["content"], timestamp = TC.parse_time(content[1], msg["timestamp"])
+            msg["content"], timestamp = TC.parse_time(content[1], msg["timestamp"])  
             stream, topic, messageOffset = self.parse_destination(content[2:], msg, private)
             if stream not in self.streamNames:
                 # ERROR! stream does not exist
@@ -128,31 +130,50 @@ class DelayBot(object):
             self.send_message(msg)
             self.send_message(DM.create_message(dm))
 
-
-    def check_file(self, time_file, current_time):
-        pass
+            self.add_message_to_db(dm)
 
 
-    def add_message_to_file(self, message):
-        message_list = []
-        if os.path.isfile('messages.json'):
-            with open('messages.json', 'r+') as mfile:  #could do this using load function. refactor later
-                json_string = mfile.read()
-                message_list = DM.json_to_delay_messages(json_string)
-                print 'found message json'
-        message_list.append(message)
-        sorted_list = sorted(message_list, key=lambda x:x.timestamp)
-        with open('messages.json', 'w') as mfile:
-            mfile.write(DM.delay_messages_to_json(sorted_list))   
+
+
+    def check_db(self, unix_timestamp=int(time.time()) ):
+        with dataset.connect() as db:
+            results = db.query('SELECT * FROM messages WHERE timestamp<%s' %unix_timestamp)
+            for r in results:
+                print [ (j,r[j]) for j in r.keys()] 
+
+    def add_message_to_db(self, delay_message):
+        with dataset.connect() as db:
+            db['messages'].insert(delay_message)
+            db.commit()
 
         
-    def remove_message_from_file(self, time_file):
+    def remove_message_from_db(self, time_stamp):
+
         pass
 
 
     def main(self):
         """Blocking call that runs forever. Calls self.respond() on every message received."""
-        self.client.call_on_each_message(lambda msg: self.respond(msg))
+        registration = self.client.register(json.dumps(["message"]))
+        queue_id = registration["queue_id"]
+        last_event_id = registration["last_event_id"]
+
+        while True:
+            results = self.client.get_events(queue_id=queue_id,last_event_id=last_event_id, dont_block=True)
+            for event in results['events']:
+                last_event_id = max(last_event_id, event['id'])
+                if "message" in event.keys():
+                    self.respond(event["message"])                    
+            print int(time.time())
+            self.check_db()
+            
+            #time.sleep(1)
+
+
+
+
+
+        #self.client.call_on_each_message(lambda msg: self.respond(msg))
 
 
 zulip_username = os.environ['DELAYBOT_USR']
