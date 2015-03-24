@@ -190,26 +190,16 @@ class DelayBot(object):
             results = self.client.get_events(queue_id=queue_id, 
                         last_event_id=last_event_id, dont_block=True)
 
-            if results.get("events") == None:
-                print 'yo'
-                continue
-            print results
-
             for event in results["events"]:
-                print event
-
                 last_event_id = max(last_event_id, event["id"])
                 if "message" in event.keys():
                     try:
                         self.respond(event["message"])
                     except ValueError as e:
                         self.handle_error(e)
-                        continue
-                    # self.send_message(output) 
-                    # self.add_message_to_db(delay_message)
 
             now = int(time.time()) 
-            print now
+            #print now
             self.check_db(now)
 
 
