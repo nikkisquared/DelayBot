@@ -77,71 +77,68 @@ class DelayBot(object):
         self.client.send_message(message)
 
 
-    def parse_destination(self, content, msg, private):
-        """Parses and returns the stream, topic, and messageOffset"""
+    def parse_destination(self, content, msg, private): 
+        """Parses and returns the stream, topic, and message_offset"""
 
         if private:
             stream = content[0].replace("_", " ")
             topic = content[1].replace("_", " ")
-            messageOffset = 4
+            message_offset = 4
         else:
             stream = msg["display_recipient"]
             topic = msg["subject"]
-            messageOffset = 2
+            message_offset = 2
 
-        return stream, topic, messageOffset
+        return stream, topic, message_offset
 
 
     def respond(self, msg):  #EH: this method needs serious refactoring
         """Checks msg against key_word. If key_word is in msg, calls send_message()"""
 
-        # DelayBot isn't allowed to call itself
-        # because recursive calls could get messy
-        if "delaybot" in msg["sender_full_name"].lower():
-            return None
-
         content = msg["content"].split(" ")
-        private = msg["type"] == "private"
+        private = (msg["type"] == "private")
+        
 
-        # intentional crash to speed up testing
-        if len(content) >= 2 and content[1] == "crash":
-            sys.exit()
+        if content[0].lower() == self.key_word:
+            
+            stream, topic, message_offset = self.parse_destination(content[2:], msg, private)
 
-        elif content[0].lower() == self.key_word:
+            if "delaybot" in msg["sender_full_name"].lower(): #delaybot doesn't call itself
+                return None
 
-            # if no command was given, it doesn't try to parse it
-            if len(content) < 3 or (private and len(content) < 5):
-                # ERROR! not enough commands given
-                msg["content"] = "Not enough commands given!"
+            elif len(content) < 3 or (private and len(content) < 5): #delaybot checks command length
+                msg["content"] = "Not enough commands given!" 
                 self.send_message(msg)
                 return None
-            
-            msg["content"], timestamp = TC.parse_time(content[1], msg["timestamp"])  
-            stream, topic, messageOffset = self.parse_destination(content[2:], msg, private)
-            if stream not in self.streamNames:
-                # ERROR! stream does not exist
-                msg["content"] = "There is no stream known as %s" % stream
+                           
+            elif stream not in self.streamNames: #delaybot checks valid stream destination
+                msg["content"] = "There is no stream known as %s" % stream 
+                self.send_message(msg)
                 return None
+                
+            else:
+                msg["content"], timestamp = TC.parse_time(content[1], msg["timestamp"])  #variable renaming needed?
 
-            message = " ".join([str(x) for x in content[messageOffset:]])
-            dm = DM.delay_message(timestamp, msg["sender_full_name"],
-                                self.currentUid, stream, topic, message)
-            self.currentUid += 1
-            self.send_message(msg)
-            self.send_message(DM.create_message(dm))
-
-            self.add_message_to_db(dm)
+                message = " ".join([str(x) for x in content[message_offset:]])  #this is unclear?
+                dm = DM.delay_message(timestamp, msg["sender_full_name"],
+                                    self.currentUid, stream, topic, message)
+                
+                self.currentUid += 1
+                
+                self.send_message(msg)
+                self.add_message_to_db(dm)
 
 
 
 
     def check_db(self, unix_timestamp=int(time.time()) ):
+
         with dataset.connect() as db:
-            results = db.query('SELECT * FROM messages WHERE timestamp<%s' %unix_timestamp)
-            for r in results:
-                msg = DM.create_message(r)
+            results = db.query('SELECT * FROM messages WHERE timestamp<%s'%unix_timestamp)
+            for result in results:
+                msg = DM.create_message(result)
                 self.send_message(msg)
-                self.remove_message_from_db(r)
+                self.remove_message_from_db(result)
             # for res in db['messages'].all():
             #     print [ (x, res[x]) for x in res.keys()]
 
