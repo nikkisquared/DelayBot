@@ -95,8 +95,7 @@ class DelayBot(object):
 
         return stream, topic
 
-
-    def respond(self, msg):  #EH: this method needs serious refactoring
+    def respond(self, msg):
         """Checks msg against key_word. If key_word is in msg, calls send_message()"""
 
         content = msg["content"].split(" ")
@@ -108,14 +107,12 @@ class DelayBot(object):
             "delaybot" in msg["sender_full_name"].lower()):
             return None
 
-        # private calls need to add a stream and topic name
-        # public calls need to give a delay time and message
         if len(content) < 3 or (private and len(content) < 5):
+            start = "Not enough commands given. You must specify a delay time"
             if private:
-                raise ValueError("Not enough commands given. You must "
-                        "specify a delay time, stream, topic, and message.")
-            raise ValueError("Not enough commands given. You must "
-                        "specify a delay time and message.")
+                raise ValueError(start + ", stream, topic, and message.")
+            else:
+                raise ValueError(start + " and message.")
 
         stream, topic = self.parse_destination(content[2:], msg, private)
         if stream not in self.stream_names:
@@ -132,11 +129,8 @@ class DelayBot(object):
         dm = DM.delay_message(timestamp, msg["sender_full_name"],
                             self.currentUid, stream, topic, message)
         self.currentUid += 1
-        # we should not be editing raw message throughout, create a new one
-        # nikki here: I know, I want to implement an error system instead
-        # of clumsily editing messages. this will do for now though...
-        self.send_message(msg) 
-        self.add_message_to_db(dm)
+        self.send_message(output) 
+        #self.add_message_to_db(delay_message)
 
 
     def check_db(self, unix_timestamp=int(time.time()) ):
@@ -195,15 +189,13 @@ class DelayBot(object):
                 last_event_id = max(last_event_id, event["id"])
                 if "message" in event.keys():
                     try:
-                        output, delay_message = self.respond(event["message"])
+                        self.respond(event["message"])
                     except ValueError as e:
                         self.handle_error(e)
                         continue
-                    self.send_message(output) 
-                    self.add_message_to_db(delay_message)
 
-            #print int(time.time()) 
-            self.check_db()
+            #print int(time.time())
+            #self.check_db()
 
 
 zulip_username = os.environ["DELAYBOT_USR"]
