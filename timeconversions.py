@@ -164,11 +164,11 @@ def get_time_delay(time_dict, msg_time):
         if "P" in time_dict["meridiem"]:
             time_dict["H"] += 12
 
-        time_delay = datetime(msg_time.year, msg_time.month,
+        time_delay = datetime.datetime(msg_time.year, msg_time.month,
                             msg_time.day, time_dict["H"], time_dict["M"], time_dict["S"])
         print time_delay.timetuple()
         if time_delay < msg_time:
-            time_delay += timedelta(days=1)
+            time_delay += datetime.timedelta(days=1)
 
 
     # gives a hard limit to how long it can delay until
