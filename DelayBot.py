@@ -155,15 +155,35 @@ class DelayBot(object):
         queue_id = registration["queue_id"]
         last_event_id = registration["last_event_id"]
 
+        self.lazy_hack_function_for_time_differences(queue_id,last_event_id)
+
         while True:
             results = self.client.get_events(queue_id=queue_id,last_event_id=last_event_id, dont_block=True)
             for event in results['events']:
                 last_event_id = max(last_event_id, event['id'])
                 if "message" in event.keys():
-                    self.respond(event["message"])                    
-            print int(time.time())
+                    self.respond(event["message"]) 
+                    print event["message"]['timestamp'],                   
+            print int(time.time()) 
             self.check_db()
             
+
+    def lazy_hack_function_for_time_differences(self,queue_id,last_event_id):
+        '''there is a discrepancy between the timestamp from time.time() and that on messages.
+    As timeconversions module will require refactoring (for instance it has problems with
+    its namespace usage - time module etc...) here is a little module that highlights there is no difference.
+    '''
+        test_message = {
+        "type": "private", 
+        "sender_email": "delaybot-bot@students.hackerschool.com",
+        "content": time.time(),
+        "subject":"lazy_hack"
+        }
+        self.send_message(test_message)
+        returned_messages = self.client.get_events(queue_id=queue_id,last_event_id=last_event_id, dont_block=True)
+        zulipstamp = returned_messages['events'][-1]['message']['timestamp']
+        print zulipstamp, time.time(), zulipstamp-time.time(), test_message['content']
+
 
 zulip_username = os.environ['DELAYBOT_USR']
 zulip_api_key = os.environ['DELAYBOT_API']
