@@ -139,16 +139,23 @@ class DelayBot(object):
         with dataset.connect() as db:
             results = db.query('SELECT * FROM messages WHERE timestamp<%s' %unix_timestamp)
             for r in results:
-                print [ (j,r[j]) for j in r.keys()] 
+                msg = DM.create_message(r)
+                self.send_message(msg)
+                self.remove_message_from_db(r)
+            # for res in db['messages'].all():
+            #     print [ (x, res[x]) for x in res.keys()]
 
     def add_message_to_db(self, delay_message):
         with dataset.connect() as db:
             db['messages'].insert(delay_message)
             db.commit()
 
-        
-    def remove_message_from_db(self, time_stamp):
+    def remove_message_from_db(self, r):
+        with dataset.connect() as db:
+            db['messages'].delete(id=r['id'])
+            db.commit()
 
+   
         pass
 
 
@@ -157,6 +164,10 @@ class DelayBot(object):
         registration = self.client.register(json.dumps(["message"]))
         queue_id = registration["queue_id"]
         last_event_id = registration["last_event_id"]
+
+        with dataset.connect() as db:
+            db['messages'].delete()
+            db.commit()
 
         while True:
             results = self.client.get_events(queue_id=queue_id,last_event_id=last_event_id, dont_block=True)
