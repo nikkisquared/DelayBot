@@ -97,7 +97,7 @@ class DelayBot(object):
 
         content = msg["content"].split(" ")
         private = (msg["type"] == "private")
-        
+
 
         if content[0].lower() == self.key_word:
             
@@ -125,11 +125,8 @@ class DelayBot(object):
                 
                 self.currentUid += 1
                 
-                self.send_message(msg)
+                self.send_message(msg) #we should not be editing raw message throughout, create a new one
                 self.add_message_to_db(dm)
-
-
-
 
     def check_db(self, unix_timestamp=int(time.time()) ):
 
@@ -139,8 +136,8 @@ class DelayBot(object):
                 msg = DM.create_message(result)
                 self.send_message(msg)
                 self.remove_message_from_db(result)
-            for res in db['messages'].all(): 
-                print [ (x, res[x]) for x in res.keys()]
+            # for res in db['messages'].all(): 
+            #     print [ (x, res[x]) for x in res.keys()]
 
     def add_message_to_db(self, delay_message):
         with dataset.connect() as db:
