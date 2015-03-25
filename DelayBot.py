@@ -107,7 +107,7 @@ class DelayBot(object):
         return stream, topic
 
 
-    def is_valid_message(self, content, sender, private, stream):
+    def is_valid_message(self, content, command, sender, private, stream):
         """
         Validates a given command to check if it can be parsed further
         Raises a ValueError on fatally incorrect inputs
@@ -121,6 +121,13 @@ class DelayBot(object):
             return False
         elif "delaybot" in sender.lower():
             return False
+        elif len(command) == 0 or command_terms == 2:
+            raise ValueError("You must specify a command when calling me.")
+        elif command[0] == u"unqueue" and command_terms < 3:
+            raise ValueError("You need to specify a message to drop, or "
+                            "tell me to drop ALL.")
+        elif command[0] in (u"ping", u"help", u"queue", u"unqueue"):
+            return True
         elif private and command_terms < 5:
             raise ValueError(terms_error + ", stream, topic, and message "
                             "when calling me from a private message.")
@@ -137,24 +144,43 @@ class DelayBot(object):
         """Checks msg against key_word. If key_word is in msg, calls send_message()"""
 
         content = msg["content"].split(" ")
-        private = (msg["type"] == "private")
+        # does a slice to prevent crashes
+        command = content[1:2]
+        private = msg["type"] == "private"
         stream, topic = self.parse_destination(content, msg, private)
         
-        if self.is_valid_message(content, msg["sender_full_name"], private, stream):
+        if self.is_valid_message(
+            content, command, msg["sender_full_name"], private, stream):
 
-            timestamp, date = TC.parse_time(content[1], msg["timestamp"])
-            user_response = u"You have delayed a message to %s" % date
+            command = command[0]
 
-            # this refers to the start position of the message to be sent
-            message_offset = 2
-            if private: message_offset += 2
-            message = " ".join([str(x) for x in content[message_offset:]])
-            dm = DM.delay_message(timestamp, msg["sender_full_name"],
-                                self.currentUid, stream, topic, message)
-            self.currentUid += 1
+            if command == "ping":
+                self.send_private_message(msg["sender_email"], u"I am on. What's up?")
+            elif command == "help":
+                pass
+            elif command == "queue":
+                pass
+            elif command == "unqueue":
+                pass
+            else:
+                self.user_add_delay_message(content, msg, private, stream, topic)
 
-            self.send_private_message(msg["sender_email"], user_response)
-            self.add_message_to_db(dm)
+
+    def user_add_delay_message(self, content, msg, private, stream, topic):
+
+        timestamp, date = TC.parse_time(content[1], msg["timestamp"])
+        user_response = u"You have delayed a message to %s" % date
+
+        # this refers to the start position of the message to be sent
+        message_offset = 2
+        if private: message_offset += 2
+        message = " ".join([str(x) for x in content[message_offset:]])
+        dm = DM.delay_message(timestamp, msg["sender_full_name"],
+                            self.currentUid, stream, topic, message)
+        self.currentUid += 1
+
+        self.send_private_message(msg["sender_email"], user_response)
+        self.add_message_to_db(dm)
 
 
     def check_db(self, unix_timestamp):
@@ -199,16 +225,19 @@ class DelayBot(object):
         """Blocking call that runs forever. Calls self.respond() on every message received."""
 
         queue_id = None
-        registration = self.client.register(json.dumps(["message"]))
-        queue_id = registration.get("queue_id")
-        last_event_id = registration.get("last_event_id")
+        while queue_id == None:
+            registration = self.client.register(json.dumps(["message"]))
+            queue_id = registration.get("queue_id")
+            last_event_id = registration.get("last_event_id")
 
         while True:
-            results = self.client.get_events(queue_id=queue_id, 
+            results = self.client.get_events(queue_id=queue_id,
                         last_event_id=last_event_id, dont_block=True)
+            if results.get("events") == None:
+                continue
+
             for event in results["events"]:
                 last_event_id = max(last_event_id, event["id"])
-
                 if "message" in event.keys():
                     try:
                         self.respond(event["message"])
