@@ -5,7 +5,7 @@ import json
 def delay_message(timestamp, date, user, stream, topic, message):
     """
     Creates an instance of a delaymessage with all data
-    it needs a unix timestamp, username, unique id,
+    it needs a unix timestamp, date, username,
     stream:topic to respond in, and message to send
     """
 
@@ -13,10 +13,9 @@ def delay_message(timestamp, date, user, stream, topic, message):
         "timestamp": timestamp,
         "date": date,
         "user": user,
-        "stream": stream, 
+        "stream": stream,
         "topic": topic,
         "message": message
-
     }
 
 

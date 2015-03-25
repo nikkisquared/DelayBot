@@ -21,20 +21,24 @@ class TestGetTimeMethod(unittest.TestCase):
         # going definitively beyond 11:59PM the next day is valid
         self.assertIsNotNone(TC.get_time("1d24h60m60s"))
 
-        with self.assertRaises(ValueError):
             # testing over limits (d = 2, h = 25, m/s = 61)
-            TC.get_time("2d")
-            TC.get_time("25h")
-            TC.get_time("61m")
-            TC.get_time("61s")
-            TC.get_time("2d25h61m61s")
+        times = [
+            "2d",
+            "25h",
+            "61m",
+            "61s",
+            "2d25h61m61s",
 
             # all 0 values means no time delay, which is invalid
-            TC.get_time("0d")
-            TC.get_time("0h")
-            TC.get_time("00m")
-            TC.get_time("00s")
-            TC.get_time("0d0h0m0s")
+            "0d",
+            "0h",
+            "00m",
+            "00s",
+            "0d0h0m0s",
+            ]
+        for t in times:
+            with self.assertRaises(ValueError):
+                TC.get_time(t)
 
         # a single 0 value is acceptable
         self.assertIsNotNone(TC.get_time("0d24h60m60s"))
