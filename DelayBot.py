@@ -155,39 +155,40 @@ class DelayBot(object):
             return True
             
 
-    def response(self, msg):  
+    def response(self, msg):
         """Write me"""
 
         content = msg["content"].split(" ")
         private = msg["type"] == "private"
         stream, topic = self.parse_destination(content, msg, private)
         
-        if self.is_valid_message(content, msg["sender_full_name"], private, stream):
+        if not self.is_valid_message(content, msg["sender_full_name"], private, stream):
+            return
 
-            command = content[1]
+        command = content[1]
 
-            if command == "ping":
-                response = u"I am on. What's up?"
-            elif command == "help":
-                response = u"Not yet implemented..."
-            elif command == "queue":
-                response = self.get_queue(msg['sender_full_name'])
-            elif command == "unqueue":
-                del_id = content[2]
-                if del_id.isdigit():
-                    del_id = int(del_id)
-                response = self.unqueue(msg['sender_full_name'], del_id)
-            else:
-                response = self.user_add_delay_message(content, msg, private, stream, topic)
+        if command == "ping":
+            response = u"I am on. What's up?"
+        elif command == "help":
+            response = u"Not yet implemented..."
+        elif command == "queue":
+            response = self.get_queue(msg['sender_full_name'])
+        elif command == "unqueue":
+            del_id = content[2]
+            if del_id.isdigit():
+                del_id = int(del_id)
+            response = self.unqueue(msg['sender_full_name'], del_id)
+        else:
+            response = self.user_add_delay_message(content, msg, private, stream, topic)
 
-            self.send_private_message(msg["sender_email"], response)
+        self.send_private_message(msg["sender_email"], response)
 
 
     def get_queue(self, user):
         """Write me"""
 
         content = u"\tID.\tDateTime\t\t\t\tStream|Topic  ||   Message \n "
-    
+
         with dataset.connect() as db:
             for m in db['messages'].find(user=user):
                 content += '\t%s.\t%s\t\t%s|%s   ||   %s\n ' % (
