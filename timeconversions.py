@@ -1,9 +1,9 @@
 #!usr/bin/python
+from __future__ import unicode_literals
 
 # functions to handle time conversions
 
 import re, time, datetime
-
 
 # hardcoded data information for verifying input
 

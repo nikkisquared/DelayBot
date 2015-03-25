@@ -1,4 +1,5 @@
 #!usr/bin/python
+from __future__ import unicode_literals
 
 import zulip
 import requests
@@ -218,9 +219,9 @@ class DelayBot(object):
         # this refers to the start position of the message to be sent
         message_offset = 2
         if private: message_offset += 2
-        message = " ".join([str(x) for x in content[message_offset:]])
+        message = " ".join([x for x in content[message_offset:]])
         dm = DM.delay_message(timestamp, date, msg["sender_full_name"],
-                            stream, topic, message)
+                              stream, topic, message)
 
         self.add_message_to_db(dm)
         return user_response
@@ -267,7 +268,7 @@ class DelayBot(object):
         error = error.replace(" M", " Minute")
         error = error.replace(" S", " Second")
         print error
-        self.send_private_message(sender, error + u"")
+        self.send_private_message(sender, error.decode('utf8'))
 
 
     def boot_db(self):
