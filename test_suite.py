@@ -1,9 +1,6 @@
 import unittest
 import timeconversions as TC
-import delaymessage as DM 
-import DelayBot as DBot
-
-import json
+import delaymessage as DM
 
 class TestGetTimeMethod(unittest.TestCase):
     
@@ -21,22 +18,15 @@ class TestGetTimeMethod(unittest.TestCase):
         # going definitively beyond 11:59PM the next day is valid
         self.assertIsNotNone(TC.get_time("1d24h60m60s"))
 
-            # testing over limits (d = 2, h = 25, m/s = 61)
-        times = [
-            "2d",
-            "25h",
-            "61m",
-            "61s",
+        # testing over limits (d = 2, h = 25, m/s = 61)
+        badTimes = [
+            "2d", "25h", "61m", "61s",
             "2d25h61m61s",
-
             # all 0 values means no time delay, which is invalid
-            "0d",
-            "0h",
-            "00m",
-            "00s",
+            "0d", "0h", "00m", "00s",
             "0d0h0m0s",
             ]
-        for t in times:
+        for t in badTimes:
             with self.assertRaises(ValueError):
                 TC.get_time(t)
 
@@ -107,31 +97,6 @@ class TestGetTimeMethod(unittest.TestCase):
                 TC.get_time("12:00%s" % meridiem)
                 TC.get_time("12:00:00%s" % meridiem)
 
-        
-class TestDelayMessage(unittest.TestCase):
-
-    def setUp(self):
-        pass
-    def tearDown(self):
-        pass
-
-
-class TestJSONMethod(unittest.TestCase):
-
-    def setUp(self):
-        self.DBot = DBot.DelayBot(DBot.zulip_username, DBot.zulip_api_key, DBot.key_word, DBot.subscribed_streams)
-        self.messageObjectList = [DM.DelayMessage(i*1000, "Eric%d"%i, i, "Stream%d"%i, "Topic%d"%i,"Message%d"%i) for i in range(1,10)]
-        self.messageDictList = [{"timestamp":i*1000, "user":"Eric%d"%i, "uid":i, "stream":"Stream%d"%i, "topic":"Topic%d"%i,"message":"Message%d"%i} for i in range(1,10)]
-        
-    # def testConvertToJson(self):
-        
-    #     for m in self.messageObjectList:
-    #         self.DBot.add_message_to_file(m)
-    #     with open("messages.json") as mfile:
-    #         self.assertEqual(json.load(mfile), json.dumps(self.messageDictList))
-    
-    def tearDown(self):
-        pass
 
 if __name__ == "__main__":
     unittest.main()

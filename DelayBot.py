@@ -79,7 +79,7 @@ class DelayBot(object):
     def send_private_message(self, to, content):
         """Simple wrapper for sending a private message on zulip"""
         self.client.send_message({
-            "type": u"private",
+            "type": "private",
             "to": to,
             "content": content
         })
@@ -136,7 +136,7 @@ class DelayBot(object):
                 raise ValueError("You need to specify a message to drop, or "
                                 "tell me to drop ALL.")
             # "delaybot unqueue [term]" where term is not a number or "ALL"
-            elif not (content[2].isdigit() or content[2] != "ALL"):
+            elif not (content[2].isdigit() or content[2] == "ALL"):
                 raise ValueError("You need to give a number or `ALL`")
             else:
                 return True
@@ -169,9 +169,9 @@ class DelayBot(object):
         command = content[1]
 
         if command == "ping":
-            response = u"I am on. What's up?"
+            response = "I am on. What's up?"
         elif command == "help":
-            response = u"Not yet implemented..."
+            response = "Not yet implemented..."
         elif command == "queue":
             response = self.get_queue(msg['sender_full_name'])
         elif command == "unqueue":
@@ -188,7 +188,7 @@ class DelayBot(object):
     def get_queue(self, user):
         """Write me"""
 
-        content = u"\tID.\tDateTime\t\t\t\tStream|Topic  ||   Message \n "
+        content = "\tID.\tDateTime\t\t\t\tStream|Topic  ||   Message \n "
 
         with dataset.connect() as db:
             for m in db['messages'].find(user=user):
@@ -201,20 +201,25 @@ class DelayBot(object):
     def unqueue(self, user, del_id):
         """Write me"""
 
+        dropped = 0
+
         with dataset.connect() as db:
             for m in db['messages'].find(user=user):
                 if m['id'] == del_id or del_id == 'ALL':
                     self.remove_message_from_db(m)
-                    return u"Successfully unqueued your message!"
+                    dropped += 1
 
-        return u"You have nothing queued with that ID."
+        if dropped == 0:
+            return "You have nothing queued with that ID."
+        else:
+            return "Successfully unqueued your message%s!" % ("s" * min(dropped - 1, 1))
 
 
     def user_add_delay_message(self, content, msg, private, stream, topic):
         """Write me"""
 
         timestamp, date = TC.parse_time(content[1], msg["timestamp"])
-        user_response = u"You have delayed a message to %s" % date
+        user_response = "You have delayed a message to %s" % date
 
         # this refers to the start position of the message to be sent
         message_offset = 2
