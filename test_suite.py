@@ -1,3 +1,7 @@
+#!usr/bin/python
+
+from __future__ import unicode_literals
+
 import unittest
 import timeconversions as TC
 import delaymessage as DM

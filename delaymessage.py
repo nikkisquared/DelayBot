@@ -1,5 +1,6 @@
 #!usr/bin/python
-import json
+
+from __future__ import unicode_literals
 
 
 def delay_message(timestamp, date, user, stream, topic, message):
@@ -23,10 +24,10 @@ def create_message(dm):
     """Converts a delaymessage into a Zulip message"""
 
     message = {}
-    message["type"] = u"stream"
+    message["type"] = "stream"
     message["display_recipient"] = dm["stream"]
     message["subject"] = dm["topic"]
-    message["content"] = u"%s\n- from @**%s**" % (dm["message"], dm["user"])
+    message["content"] = "%s\n- from @**%s**" % (dm["message"], dm["user"])
     print dm["stream"]
     print dm["topic"]
     return message

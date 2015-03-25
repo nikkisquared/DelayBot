@@ -274,7 +274,8 @@ class DelayBot(object):
         error = error.replace(" M", " Minute")
         error = error.replace(" S", " Second")
         print error
-        self.send_private_message(sender, error.decode('utf8'))
+        error += " If you want more details, you can always call `DelayBot help`."
+        self.send_private_message(sender, error)
 
 
     def boot_db(self):

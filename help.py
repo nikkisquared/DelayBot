@@ -1,21 +1,23 @@
-help_string = """DELAYBOT HELP:
+help_string = """
+    DELAYBOT HELP:
 
-**Send A Message to a Stream:**
-    1: Navigate to the Stream|Topic
-    DelayBot <time> <message>    
-    2: Send DelayBot a private message
-    DelayBot <time> <stream> <topic> <message>
+    **Basic Commands**
+        DelayBot queue --> show queued messages
+        DelayBot unqueue <id> --> unqueue message with id
+        DelayBot unqueue ALL  --> unqueue all messages
+        DelayBot ping  --> delaybot are you there?
+        DelayBot help  --> what you are reading now
 
-**Commands**
-    DelayBot queue --> show queued messages
-    DelayBot unqueue <id>  --> unqueue message from id
-    DelayBot unqueue ALL  --> unqueue all messages
-    DelayBot help  --> private message help
-    DelayBot ping  --> delaybot are you there?
+    **Set up a Delayed Message:**
+        Method A: Navigate to the Stream|Topic
+        DelayBot <time> <message>    
+        Method B: Send DelayBot a private message
+        DelayBot <time> <stream> <topic> <message>
 
-**Accepted Formats**
-block: 1h3m2s || 1d5s --> now + 1hr 3mins 2 seconds etc...
-clock: 12:45pm || 8:45:59am
-24hr:  11:57  ||  23:57:45
-single: 1am
+    **Accepted Formats**
+        block: 1h3m2s  || 1d --> now + 1hr 3mins 2sec || now + 1day
+        clock: 12:45pm || 8:45:59am
+        24hr:  11:57   || 23:57:45
+        single: 1pm    || 12am
+        valid meridiems: am, a.m., AM, A.M.
 """
