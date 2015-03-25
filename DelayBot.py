@@ -10,6 +10,7 @@ import time
 
 import timeconversions as TC
 import delaymessage as DM
+import help
 
 
 class DelayBot(object):
@@ -171,7 +172,7 @@ class DelayBot(object):
         if command == "ping":
             response = "I am on. What's up?"
         elif command == "help":
-            response = "Not yet implemented..."
+            response = help.help_string
         elif command == "queue":
             response = self.get_queue(msg['sender_full_name'])
         elif command == "unqueue":
