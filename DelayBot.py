@@ -17,7 +17,7 @@ class DelayBot(object):
         """
         DelayBot takes a zulip username and api key,
         a key word to respond to (case insensitive),
-        and a list of the zulip streams it should be active in
+        and a list of the zulip streams it should be active in.
         """
         self.username = zulip_username
         self.api_key = zulip_api_key
@@ -112,98 +112,104 @@ class DelayBot(object):
 
         activation_word = content[0].lower()
         content_length = len(content)
-        terms_error = "Not enough commands given. You must specify a delay time"
+        time_error = "Not enough commands given. You must specify a delay time"
 
+        # the message was not sent for DelayBot
         if activation_word != self.key_word:
             return False
-
+        # recursion is denied
         elif "delaybot" in sender.lower():
             return False
 
-        elif content_length == 1:         # 'delaybot' no command
+        # "delaybot" no command given
+        elif content_length == 1:
             raise ValueError("You must specify a command when calling me.")
 
-        elif content[1] == u"unqueue" and content_length < 3:   #  'delaybot unqueue' no id
-            raise ValueError("You need to specify a message to drop, or "
-                            "tell me to drop ALL.")
+        # "delaybot (ping/help/queue)"
+        elif content[1] in ("ping", "help", "queue"):
+            return True
 
-        elif content[1] == u"unqueue" and not content[2].isdigit() and content[2]!="ALL":
-            raise ValueError("You need to unqueue a digit or "
-                            "tell me to unqueue ALL.")
+        elif content[1] == "unqueue":
+            # "delaybot unqueue" no id
+            if content_length < 3:
+                raise ValueError("You need to specify a message to drop, or "
+                                "tell me to drop ALL.")
+            # "delaybot unqueue [term]" where term is not a number or "ALL"
+            elif not (content[2].isdigit() or content[2] != "ALL"):
+                raise ValueError("You need to give a number or `ALL`")
+            else:
+                return True
 
-
-        elif content[1] in (u"ping", u"help", u"queue", u"unqueue"): # 'delaybot ping/help...'
-            return True                                              # good commands, return true
-
-        elif private and content_length < 5:      # '@delaybot time message' no stream/topic
-            raise ValueError(terms_error + ", stream, topic, and message "
+        # "@delaybot time message" no stream/topic
+        elif private and content_length < 5:
+            raise ValueError(time_error + ", stream, topic, and message "
                             "when calling me from a private message.")
-
-        elif content_length < 3:         # 'delaybot time ' no message   
-            raise ValueError(terms_error + " and message when calling me "
+        # "delaybot time " no message
+        elif content_length < 3:
+            raise ValueError(time_error + " and message when calling me "
                             "from public streams.")
-
-        elif stream not in self.stream_names:    # '@delaybot time stream topic message' not valid stream
-            raise ValueError("There is no stream \"%s\"." % stream) 
-        
+        # "@delaybot time stream topic message" not valid stream
+        elif stream not in self.stream_names:
+            raise ValueError("There is no stream \"%s\"." % stream)
         else:
             return True
             
 
-    def respond(self, msg):  
-        """Checks msg against key_word. If key_word is in msg, calls send_message()"""
+    def response(self, msg):  
+        """Write me"""
 
         content = msg["content"].split(" ")
-
         private = msg["type"] == "private"
         stream, topic = self.parse_destination(content, msg, private)
         
-        if self.is_valid_message(
-            content, msg["sender_full_name"], private, stream):
+        if self.is_valid_message(content, msg["sender_full_name"], private, stream):
 
             command = content[1]
 
             if command == "ping":
-                self.send_private_message(msg["sender_email"], u"I am on. What's up?")
+                response = u"I am on. What's up?"
             elif command == "help":
-                pass
+                response = u"Not yet implemented..."
             elif command == "queue":
-                self.queue(msg['sender_full_name'], msg['sender_email'])
+                response = self.get_queue(msg['sender_full_name'])
             elif command == "unqueue":
                 del_id = content[2]
                 if del_id.isdigit():
                     del_id = int(del_id)
-                self.unqueue(msg['sender_full_name'],msg["sender_email"], del_id)
+                response = self.unqueue(msg['sender_full_name'], del_id)
             else:
-                self.user_add_delay_message(content, msg, private, stream, topic)
+                response = self.user_add_delay_message(content, msg, private, stream, topic)
 
-    def queue(self, user, user_email):
+            self.send_private_message(msg["sender_email"], response)
+
+
+    def get_queue(self, user):
+        """Write me"""
+
         content = u"\tID.\tDateTime\t\t\t\tStream|Topic  ||   Message \n "
     
         with dataset.connect() as db:
             for m in db['messages'].find(user=user):
-                
-                content += '\t%s.\t%s\t\t%s|%s   ||   %s\n ' %(
+                content += '\t%s.\t%s\t\t%s|%s   ||   %s\n ' % (
                     m['id'], m['date'], m['stream'], m['topic'], m['message'])
 
-        self.send_private_message(user_email, content)
+        return content
 
-    def unqueue(self, user, user_email, del_id):
-        id_exists = False
+
+    def unqueue(self, user, del_id):
+        """Write me"""
+
         with dataset.connect() as db:
             for m in db['messages'].find(user=user):
-                if m['id'] == del_id or del_id == u'ALL':
+                if m['id'] == del_id or del_id == 'ALL':
                     self.remove_message_from_db(m)
-                    id_exists= True
-                    self.send_private_message(user_email, "Successfully unqueued your message!")
+                    return u"Successfully unqueued your message!"
 
-        if not id_exists:
-            self.send_private_message(user_email, "You have nothing queued with that ID.")
-
-
+        return u"You have nothing queued with that ID."
 
 
     def user_add_delay_message(self, content, msg, private, stream, topic):
+        """Write me"""
 
         timestamp, date = TC.parse_time(content[1], msg["timestamp"])
         user_response = u"You have delayed a message to %s" % date
@@ -215,12 +221,13 @@ class DelayBot(object):
         dm = DM.delay_message(timestamp, date, msg["sender_full_name"],
                             stream, topic, message)
 
-
-        self.send_private_message(msg["sender_email"], user_response)
         self.add_message_to_db(dm)
+        return user_response
 
 
     def check_db(self, unix_timestamp):
+        """Write me"""
+
         print unix_timestamp
         with dataset.connect() as db:
             results = db.query("SELECT * FROM messages WHERE timestamp<%d" % unix_timestamp)
@@ -234,6 +241,8 @@ class DelayBot(object):
 
 
     def add_message_to_db(self, delay_message):
+        """Write me"""
+        
         with dataset.connect() as db:
             db["messages"].insert(delay_message)
             for res in db["messages"].all():
@@ -242,6 +251,8 @@ class DelayBot(object):
 
 
     def remove_message_from_db(self, result):
+        """Write me"""
+        
         with dataset.connect() as db:
             db["messages"].delete(id=result["id"])
             db.commit()
@@ -259,13 +270,16 @@ class DelayBot(object):
 
 
     def boot_db(self):
+        """Write me"""
+        
         with dataset.connect() as db:      
             boot_message = DM.delay_message(int(time.time()), 'Today', 'DelayBot',
                             'test-bot', 'DelayBot' , 'DelayBot is up and running')
             db['messages'].insert(boot_message)
 
+
     def main(self):
-        """Blocking call that runs forever. Calls self.respond() on every message received."""
+        """Write me"""
 
         self.boot_db()
 
@@ -285,7 +299,7 @@ class DelayBot(object):
                 last_event_id = max(last_event_id, event["id"])
                 if "message" in event.keys():
                     try:
-                        self.respond(event["message"])
+                        self.response(event["message"])
                     except ValueError as e:
                         self.handle_error(e, event["message"]["sender_email"])
 
