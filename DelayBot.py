@@ -257,8 +257,9 @@ class DelayBot(object):
             # for some reason, sometimes queue_id becomes wrong
             if results.get("events") == None:
                 queue_id, last_event_id = self.register()
-                for key, value in results:
-                    print "key %s has value %s" % (key, value)
+                print "ERROR:"
+                for thing in results:
+                    print thing
                 continue
 
             for event in results["events"]:
