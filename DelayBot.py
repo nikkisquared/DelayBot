@@ -221,9 +221,12 @@ class DelayBot(object):
         boot_message = delaymessage.make_delay_message(
             "(just now)", int(time.time()), "N/A", "DelayBot", "test-bot",
             "DelayBot" , "DelayBot is up and running")
+        print "added to DB"
         database.boot_db(boot_message)
+        print "sent message"
 
         queue_id, last_event_id = self.register()
+        print "registered"
 
         while True:
             dm = database.check_db(int(time.time()))
@@ -248,8 +251,6 @@ class DelayBot(object):
 
 # blocks DelayBot from running automatically when imported
 if __name__ == "__main__":
-
-    print "HERE"
 
     zulip_username = os.environ["DELAYBOT_USR"]
     zulip_api_key = os.environ["DELAYBOT_API"]
