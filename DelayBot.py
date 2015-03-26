@@ -71,6 +71,7 @@ class DelayBot(object):
         """
         queue_id = None
         while queue_id == None:
+            print "trying to register..."
             registration = self.client.register(json.dumps(["message"]))
             queue_id = registration.get("queue_id")
             last_event_id = registration.get("last_event_id")
