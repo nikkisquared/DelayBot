@@ -24,4 +24,5 @@ help_string = """
         12hr:   8:45:59am || 12:45pm
         single: 8am       || 12pm
         valid meridiems: am, a.m., AM, A.M.
+        note that DelayBot bases all times on EDT, as RC is in New York
 """
