@@ -130,7 +130,8 @@ def get_time(user_time):
             user_time_caps[-4:] in meridiems):
         time_dict["format"] = "single"
     else:
-        raise ValueError("%s is not a valid time format." % user_time)
+        raise ValueError("\"%s\" is not a valid time format. You might "
+                        "have misentered a different command." % user_time)
 
     if time_dict["format"] == "block":
         time_dict = check_block_time(user_time_caps, time_dict)

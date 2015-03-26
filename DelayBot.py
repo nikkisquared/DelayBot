@@ -71,7 +71,6 @@ class DelayBot(object):
         """
         queue_id = None
         while queue_id == None:
-            print "trying to register..."
             registration = self.client.register(json.dumps(["message"]))
             queue_id = registration.get("queue_id")
             last_event_id = registration.get("last_event_id")
@@ -103,7 +102,28 @@ class DelayBot(object):
         return stream, topic
 
 
-    def is_valid_message(self, content, sender, command, private):
+    def is_delaybot_call(self, content, sender):
+        """
+        Verifies whether or not a given message is directed to DelayBot
+        Raises a ValueError if no commands were given
+        """
+
+        # recursion is denied
+        if "delaybot" in sender.lower():
+            return False
+        if self.key_word in content[0].lower():
+            # call is "DelayBot" with no following arguments
+            if len(content) == 1:
+                raise ValueError("You must specify a command when calling me.")
+            # call looks like "DelayBot ..."
+            else:
+                return True
+        # DelayBot was not referenced
+        else:
+            return False
+
+
+    def is_valid_call(self, content, command, private):
         """
         Validates a given command to check if it can be parsed further
         Raises a ValueError on fatally incorrect inputs
@@ -115,18 +135,11 @@ class DelayBot(object):
         time_error = ("Not enough commands given. You must specify "
                         "a delay time%s when calling me from %s.")
 
-        # the message was not sent for DelayBot
-        if activation_word != self.key_word:
-            return False
-        # recursion is denied
-        elif "delaybot" in sender.lower():
-            return False
-
         # "delaybot (ping/help/queue)"
-        elif content[1].lower() in ("ping", "help", "queue"):
+        if command in ("ping", "help", "queue"):
             return True
 
-        elif content[1].lower() == "unqueue":
+        elif command == "unqueue":
             # "delaybot unqueue" no id
             if content_length < 3:
                 raise ValueError(unqueue_error % "`id`")
@@ -150,18 +163,22 @@ class DelayBot(object):
             
 
     def respond(self, msg):
-        """Write me"""
+        """
+        Handles parsing commands, and calling other major functions
+        to process them. Redirects output on success/fatally bad input
+        """
 
-        # "delaybot" no command given
-        if msg["content"].lower().strip() == self.key_word:
-            raise ValueError("You must specify a command when calling me.")
-
-        sender = msg["sender_full_name"]
         content = msg["content"].split(" ")
-        command = content[1].lower()
+        sender = msg["sender_full_name"]
         private = msg["type"] == "private"
-        
-        if not self.is_valid_message(content, sender, command, private):
+        # "DelayBot" is not neccesary to start off a private command
+        if private and content[0].lower() != self.key_word:
+            content = [self.key_word] + content
+
+        if not self.is_delaybot_call(content, sender):
+            return None
+        command = content[1].lower()
+        if not self.is_valid_call(content, command, private):
             return None
 
         if command == "ping":
@@ -185,9 +202,10 @@ class DelayBot(object):
 
         timestamp, date, zulipdate = TC.parse_time(content[1], msg["timestamp"])
         stream, topic = self.parse_destination(content, msg, private)
-        # "@delaybot time stream topic message" not valid stream
+        # "delaybot time stream topic message" with an non-existant stream
         if stream not in self.stream_names:
-            raise ValueError("I am not in the stream \"%s\"." % stream)
+            raise ValueError("I am not in the stream \"%s\". Check capitals,"
+                "spelling, and replace spaces with underscores." % stream)
 
         # a public command looks like "DelayBot [time] [message...]"
         message_offset = 2
@@ -222,14 +240,13 @@ class DelayBot(object):
         boot_message = delaymessage.make_delay_message(
             "(just now)", int(time.time()), "N/A", "DelayBot", "test-bot",
             "DelayBot" , "DelayBot is up and running")
-        print "added to DB"
         database.boot_db(boot_message)
-        print "sent message"
 
         queue_id, last_event_id = self.register()
-        print "registered"
 
         while True:
+            delta = time.time()
+
             dm = database.check_db(int(time.time()))
             if dm != None:
                 msg = delaymessage.make_zulip_message(dm)
@@ -237,9 +254,11 @@ class DelayBot(object):
 
             results = self.client.get_events(queue_id=queue_id,
                         last_event_id=last_event_id, dont_block=True)
+            # for some reason, sometimes queue_id becomes wrong
             if results.get("events") == None:
-                # for some reason, sometimes results isn't right
-                print "WRONG RESULTS:\n%s" % results
+                queue_id, last_event_id = self.register()
+                for key, value in results:
+                    print "key %s has value %s" % (key, value)
                 continue
 
             for event in results["events"]:
@@ -248,6 +267,8 @@ class DelayBot(object):
                     self.respond(event["message"])
                 except ValueError as e:
                     self.handle_error(e, event["message"]["sender_email"])
+
+            time.sleep(min(1, time.time() - delta))
 
 
 # blocks DelayBot from running automatically when imported

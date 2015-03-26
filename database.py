@@ -17,15 +17,17 @@ def get_queue(user):
 
     content = ""
     with dataset.connect() as db:
-        for m in db['messages'].find(user=user):
-            content += '\t%s. \t%s\t\t%s|%s   ||   %s\n ' % (
-                m['id'], m['date'], m['stream'], m['topic'], m['message'])
+        for m in db["messages"].find(user=user, order_by="date"):
+            content += ("\t%s.\t\t  %s\t %s"
+                "\t%s|%s   ||   %s\n " % (
+                m["id"], m["dateStored"], m["date"], 
+                m["stream"], m["topic"], m["message"]))
 
     if not content:
         content = "You have no messages queued."
     else:
-        content = ("\tID. \tDate\t   Time\t\t\tStream|Topic"
-                    "\t||\tMessage \n" + content)
+        content = ("\tID.\t From Date\t\t Time\t  To Date\t\tTime"
+                    "\t\tStream|Topic\t\t||\tMessage \n" + content)
     return content
 
 
@@ -48,23 +50,20 @@ def unqueue(user, del_id):
 
 
 def check_db(unix_timestamp):
-    """Checks if any delay_messages need to be sent, and returns the first one"""
+    """
+    Checks if any delay_messages need to be sent
+    Returns the first one found, or None
+    """
 
     with dataset.connect() as db:
         results = db.query("SELECT * FROM messages WHERE timestamp<%d" % unix_timestamp)
         for result in results:
-            delay_message = result
             remove_message_from_db(result)
             db.commit()
+            delay_message = result
             print delay_message
             return delay_message
     return None
-        # for result in results:
-        #     print result
-        #     msg = DM.create_message(result)
-        #     self.send_message(msg)
-        #     remove_message_from_db(result)
-        # db.commit()
 
 
 def add_message_to_db(delay_message):
