@@ -1,6 +1,8 @@
-help_string = """
-    DELAYBOT HELP:
+#!usr/bin/python
 
+# stores the lengthy help_string that explains usage
+
+help_string = """
     **Basic Commands**
         DelayBot queue --> show queued messages
         DelayBot unqueue <id> --> unqueue message with id
@@ -15,9 +17,9 @@ help_string = """
         DelayBot <time> <stream> <topic> <message>
 
     **Accepted Formats**
-        block: 1h3m2s  || 1d --> now + 1hr 3mins 2sec || now + 1day
-        clock: 12:45pm || 8:45:59am
-        24hr:  11:57   || 23:57:45
-        single: 1pm    || 12am
+        block:  1h45m30s  || 1d --> now + 1hr 45mins 30sec || now + 1day
+        24hr:   08:45:59  || 23:45
+        12hr:   8:45:59am || 12:45pm
+        single: 8am       || 12pm
         valid meridiems: am, a.m., AM, A.M.
 """
