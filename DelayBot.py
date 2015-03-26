@@ -249,6 +249,8 @@ class DelayBot(object):
 # blocks DelayBot from running automatically when imported
 if __name__ == "__main__":
 
+    print "HERE"
+
     zulip_username = os.environ["DELAYBOT_USR"]
     zulip_api_key = os.environ["DELAYBOT_API"]
     key_word = "DelayBot"
