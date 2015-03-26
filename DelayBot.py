@@ -278,7 +278,7 @@ if __name__ == "__main__":
     zulip_api_key = os.environ["DELAYBOT_API"]
     key_word = "DelayBot"
     # an empty list will make it subscribe to all streams
-    subscribed_streams = ["test-bot"]
+    subscribed_streams = []
 
     new_bot = DelayBot(zulip_username, zulip_api_key, key_word, subscribed_streams)
     new_bot.main()
