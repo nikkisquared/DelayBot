@@ -217,7 +217,7 @@ class DelayBot(object):
         dm = delaymessage.make_delay_message(zulipdate, timestamp, date,
                         msg["sender_full_name"], stream, topic, message)
         database.add_message_to_db(dm)
-        return "You have delayed a message to %s" % date
+        return "You have delayed a message to %s (EDT)" % date
 
 
     def handle_error(self, e, sender):

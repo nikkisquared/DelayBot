@@ -28,6 +28,6 @@ def make_zulip_message(dm):
     message["type"] = "stream"
     message["to"] = dm["stream"]
     message["subject"] = dm["topic"]
-    message["content"] = "%s\n- from @**%s** at %s" % (
+    message["content"] = "%s\n- from @**%s** at %s (EDT)" % (
             dm["message"], dm["user"], dm["dateStored"])
     return message
