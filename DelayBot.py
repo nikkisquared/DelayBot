@@ -3,6 +3,8 @@
 from __future__ import unicode_literals
 
 import zulip
+import dotenv
+
 import requests
 import json
 import os
@@ -71,6 +73,7 @@ class DelayBot(object):
         """
         queue_id = None
         while queue_id == None:
+            print "Attempting to register..."
             registration = self.client.register(json.dumps(["message"]))
             queue_id = registration.get("queue_id")
             last_event_id = registration.get("last_event_id")
@@ -241,11 +244,14 @@ class DelayBot(object):
             "(just now)", int(time.time()), "N/A", "DelayBot", "test-bot",
             "DelayBot" , "DelayBot is up and running")
         database.boot_db(boot_message)
-
-        queue_id, last_event_id = self.register()
+        queue_id = None
 
         while True:
             delta = time.time()
+
+            # queue_id resets every 10 minutes or so
+            if queue_id == None:
+                queue_id, last_event_id = self.register()
 
             dm = database.check_db(int(time.time()))
             if dm != None:
@@ -254,27 +260,21 @@ class DelayBot(object):
 
             results = self.client.get_events(queue_id=queue_id,
                         last_event_id=last_event_id, dont_block=True)
-            # for some reason, sometimes queue_id becomes wrong
-            if results.get("events") == None:
-                queue_id, last_event_id = self.register()
-                print "ERROR:"
-                for thing in results:
-                    print thing
-                continue
-
             for event in results["events"]:
                 last_event_id = max(last_event_id, event["id"])
                 try:
                     self.respond(event["message"])
                 except ValueError as e:
                     self.handle_error(e, event["message"]["sender_email"])
-
+                    
+            # stops the bot from running more than once per second
             time.sleep(min(1, time.time() - delta))
 
 
 # blocks DelayBot from running automatically when imported
 if __name__ == "__main__":
 
+    dotenv.read_dotenv()
     zulip_username = os.environ["DELAYBOT_USR"]
     zulip_api_key = os.environ["DELAYBOT_API"]
     key_word = "DelayBot"

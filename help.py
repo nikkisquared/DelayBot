@@ -9,6 +9,8 @@ help_string = """
         DelayBot unqueue ALL  --> unqueue all messages
         DelayBot ping  --> delaybot are you there?
         DelayBot help  --> what you are reading now
+        replies are always private messages- please keep most DB calls there
+        also, saying "DelayBot" is not necessary from a private message
 
     Delay A Message:
         Method A: Navigate to a stream and topic
@@ -24,5 +26,5 @@ help_string = """
         12hr:   8:45:59am || 12:45pm
         single: 8am       || 12pm
         valid meridiems: am, a.m., AM, A.M.
-        note that DelayBot bases all times on EDT, as RC is in New York
+        note that DelayBot uses Eastern Time, as Recurse Center is in New York
 """

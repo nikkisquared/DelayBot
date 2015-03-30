@@ -2,3 +2,5 @@ DelayBot.sublime-project
 DelayBot.sublime-workspace
 *.pyc
 *.bash
+avatar2.png
+.env

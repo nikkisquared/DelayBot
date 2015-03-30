@@ -11,6 +11,8 @@ DelayBot unqueue <id\> --> unqueue message with id
 DelayBot unqueue ALL  --> unqueue all messages  
 DelayBot ping  --> delaybot are you there?  
 DelayBot help  --> gives you this text
+replies are always private messages- please keep most DB calls there
+also, saying "DelayBot" is not necessary from a private message
 
 **Delay A Message**  
 Method A: Navigate to the Stream|Topic  
@@ -26,3 +28,4 @@ block:  1h45m30s  || 1d --> now + 1hr 45mins 30sec || now + 1day
 12hr:   8:45:59am || 12:45pm  
 single: 8am       || 12pm  
 valid meridiems: am, a.m., AM, A.M.
+note that DelayBot uses Eastern Time, as Recurse Center is in New York
