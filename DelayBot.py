@@ -249,18 +249,24 @@ class DelayBot(object):
         while True:
             delta = time.time()
 
-            # queue_id resets every 10 minutes or so
+            # queue_id resets every 15 minutes or so
             if queue_id == None:
                 queue_id, last_event_id = self.register()
+                print "registered!"
 
             dm = database.check_db(int(time.time()))
             if dm != None:
                 msg = delaymessage.make_zulip_message(dm)
                 self.client.send_message(msg)
 
-            results = self.client.get_events(queue_id=queue_id,
-                        last_event_id=last_event_id, dont_block=True)
-            if not results.get("events"):
+            results = self.client.get_events(
+                    queue_id=queue_id, last_event_id=last_event_id,
+                    longpolling=True, dont_block=True)
+
+            if results.get("events") == None:
+                print results["msg"], results["result"]
+                # force queue_id to reset
+                queue_id = None
                 continue
 
             for event in results["events"]:
