@@ -260,6 +260,9 @@ class DelayBot(object):
 
             results = self.client.get_events(queue_id=queue_id,
                         last_event_id=last_event_id, dont_block=True)
+            if not results.get("events"):
+                continue
+
             for event in results["events"]:
                 last_event_id = max(last_event_id, event["id"])
                 try:
