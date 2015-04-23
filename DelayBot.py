@@ -73,7 +73,7 @@ class DelayBot(object):
         """
         queue_id = None
         while queue_id == None:
-            print "Attempting to register..."
+            # print "Attempting to register..."
             registration = self.client.register(json.dumps(["message"]))
             queue_id = registration.get("queue_id")
             last_event_id = registration.get("last_event_id")
@@ -252,7 +252,7 @@ class DelayBot(object):
             # queue_id resets every 15 minutes or so
             if queue_id == None:
                 queue_id, last_event_id = self.register()
-                print "registered!"
+                # print "registered!"
 
             dm = database.check_db(int(time.time()))
             if dm != None:
@@ -264,7 +264,7 @@ class DelayBot(object):
                     longpolling=True, dont_block=True)
 
             if results.get("events") == None:
-                print results["msg"], results["result"]
+                # print results["msg"], results["result"]
                 # force queue_id to reset
                 queue_id = None
                 continue
