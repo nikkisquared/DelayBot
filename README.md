@@ -1,6 +1,14 @@
 DelayBot
 ========
-DelayBot is a Zulip bot by `nikkisquared` and `condnsdmatters` (https://github.com/condnsdmatters/DelayBot) that allows users to create scheduled Zulip messages. It can be called from public channels and private messages, although it gives all replies in private. Some ideas for uses are self-reminders, calling other bots, pre-announcing something in case you forget to later. DelayBot was started from the source code for Bot-Builder https://github.com/di0spyr0s/Bot-Builder
+DelayBot is a Zulip bot that allows users to create scheduled Zulip messages. It can be called from public channels and private messages, although it gives all replies in private. Some ideas for uses are self-reminders, calling other bots, and scheduled announcements. Messages created using DelayBot will be attributed to their original sender.  
+
+DelayBot was started as a fork of Bot-Builder (https://github.com/di0spyr0s/Bot-Builder).
+
+
+Authors
+=======
+Nikki Bee (https://github.com/nikkisquared/DelayBot)
+Eric Hambro (https://github.com/condnsdmatters/DelayBot)
 
 
 Usage
