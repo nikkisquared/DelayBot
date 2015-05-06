@@ -7,7 +7,7 @@ DelayBot was started as a fork of Bot-Builder (https://github.com/di0spyr0s/Bot-
 
 Authors
 =======
-Nikki Bee (https://github.com/nikkisquared/DelayBot)
+Nikki Bee (https://github.com/nikkisquared/DelayBot)  
 Eric Hambro (https://github.com/condnsdmatters/DelayBot)
 
 
